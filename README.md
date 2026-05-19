@@ -1,6 +1,6 @@
 # Chaos Dimension
 
-> A note from the author: I wanted a JIRA, but for me. Specifically, a JIRA with a control panel for dispatching coding agents and watching them work. I looked. I did not find. So I built it, and I made it look like a 1991 Macintosh, because if I'm going to stare at a project tracker all day it should at least be fun.
+> A note from the author: I wanted a JIRA, but for me. Specifically, a JIRA with a control panel for dispatching coding agents and watching them work. I looked and did not find one. So I built it, and I made it look like a 1991 Macintosh, because if I'm going to stare at a project tracker all day it should at least be fun.
 
 A retro Mac OS System 7-styled mission control for personal projects and AI agent orchestration. Kanban on the left, agent terminal monitor on the right, blue dither desktop everywhere.
 
@@ -16,6 +16,7 @@ System 7 chrome (striped title bars, beveled buttons, inset borders) because con
 
 "Chaos dimension" is a lyric from ["Almost Had to Start a Fight / In and Out of Patience"](https://open.spotify.com/track/7xhZCVsVhDSjhFm41mOX10?si=5bc063da68f24a56) by Parquet Courts, a Brooklyn band. Felt about right for a tool that orchestrates several agents trying to do several things at once.
 
+> "Can someone tell me the reason? I'm in the Chaos Dimension. Trapped in a brutal invention." -Parquet Courts
 ## How to build and deploy your own Chaos Dimension
 
 ### Local development
