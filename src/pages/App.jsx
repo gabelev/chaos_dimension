@@ -1,17 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
-import { MAC, GLOBAL_CSS } from './styles/mac';
-import { WORKSTREAMS, COLUMNS, COL_LABELS } from './data/workstreams';
-import { SEED_TASKS, SEED_AGENTS } from './data/seed';
-import MacWindow from './components/MacWindow';
-import { MenuBar, MenuBarItem, MenuDropdown, FilterPill } from './components/MenuBar';
-import TaskCard from './components/TaskCard';
-import TaskModal from './components/TaskModal';
-import AgentCard from './components/AgentCard';
-import AboutDialog from './components/AboutDialog';
+import { MAC, GLOBAL_CSS } from '../styles/mac';
+import { WORKSTREAMS, COLUMNS, COL_LABELS } from '../data/workstreams';
+import { SEED_TASKS, SEED_AGENTS } from '../data/seed';
+import MacWindow from '../components/MacWindow';
+import { MenuBar, MenuBarItem, MenuDropdown, FilterPill } from '../components/MenuBar';
+import TaskCard from '../components/TaskCard';
+import TaskModal from '../components/TaskModal';
+import AgentCard from '../components/AgentCard';
+import AboutDialog from '../components/AboutDialog';
+import { api } from '../lib/api';
 
-export default function App() {
-  const [tasks, setTasks] = useState(SEED_TASKS);
-  const [agents, setAgents] = useState(SEED_AGENTS);
+export default function App({ mode = 'live' }) {
+  const isDemo = mode === 'demo';
+  const [tasks, setTasks] = useState(isDemo ? SEED_TASKS : []);
+  const [agents, setAgents] = useState(isDemo ? SEED_AGENTS : []);
   const [showAddTask, setShowAddTask] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [filterWorkstream, setFilterWorkstream] = useState("all");
@@ -25,53 +27,80 @@ export default function App() {
     return () => clearInterval(t);
   }, []);
 
-  // TODO: Replace with DB fetch
-  // useEffect(() => { fetch('/api/tasks').then(...) }, []);
+  useEffect(() => {
+    if (isDemo) return;
+    Promise.all([api.listTasks(), api.listAgents()])
+      .then(([t, a]) => { setTasks(t); setAgents(a); })
+      .catch((err) => console.error('load failed', err));
+  }, [isDemo]);
+
+  const showDemoAlert = useCallback(() => {
+    if (isDemo) {
+      alert('This is a demo. Clone the repo to run your own Chaos Dimension.');
+      return true;
+    }
+    return false;
+  }, [isDemo]);
 
   const moveTask = useCallback((taskId, newCol) => {
+    if (showDemoAlert()) return;
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, column: newCol } : t));
-  }, []);
+    api.updateTask(taskId, { column: newCol }).catch(console.error);
+  }, [showDemoAlert]);
 
-  const addTask = useCallback((task) => {
-    setTasks(prev => [...prev, { ...task, id: "t" + Date.now() }]);
+  const addTask = useCallback(async (task) => {
+    if (showDemoAlert()) return;
+    const created = await api.createTask(task);
+    setTasks(prev => [...prev, created]);
     setShowAddTask(false);
-  }, []);
+  }, [showDemoAlert]);
 
   const updateTask = useCallback((taskId, updates) => {
+    if (showDemoAlert()) return;
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t));
-  }, []);
+    api.updateTask(taskId, updates).catch(console.error);
+  }, [showDemoAlert]);
 
-  const deleteTask = useCallback((taskId) => {
+  const deleteTask = useCallback(async (taskId) => {
+    if (showDemoAlert()) return;
     setTasks(prev => prev.filter(t => t.id !== taskId));
     setEditingTask(null);
-  }, []);
+    await api.deleteTask(taskId).catch(console.error);
+  }, [showDemoAlert]);
 
   const dispatchToAgent = useCallback((taskId) => {
+    if (showDemoAlert()) return;
     const free = agents.find(a => a.status === "idle");
     if (!free) return;
     const task = tasks.find(t => t.id === taskId);
     const now = new Date().toLocaleTimeString();
-    setAgents(prev => prev.map(a => a.id === free.id ? {
-      ...a, taskId, status: "running", startedAt: new Date().toISOString(),
+    const updates = {
+      taskId, status: "running", startedAt: new Date().toISOString(),
       log: [`[${now}] Dispatched: ${task?.title}`, `[${now}] Loading context...`],
-    } : a));
+    };
+    setAgents(prev => prev.map(a => a.id === free.id ? { ...a, ...updates } : a));
+    api.updateAgent(free.id, updates).catch(console.error);
     moveTask(taskId, "active");
-  }, [agents, tasks, moveTask]);
+  }, [agents, tasks, moveTask, showDemoAlert]);
 
   const completeAgent = useCallback((agentId) => {
+    if (showDemoAlert()) return;
     const agent = agents.find(a => a.id === agentId);
     if (agent?.taskId) moveTask(agent.taskId, "review");
     const now = new Date().toLocaleTimeString();
-    setAgents(prev => prev.map(a => a.id === agentId ? {
-      ...a, taskId: null, status: "idle", startedAt: null,
-      log: [...a.log, `[${now}] Task complete`],
-    } : a));
-  }, [agents, moveTask]);
+    const updates = {
+      taskId: null, status: "idle", startedAt: null,
+      log: [...(agent?.log ?? []), `[${now}] Task complete`],
+    };
+    setAgents(prev => prev.map(a => a.id === agentId ? { ...a, ...updates } : a));
+    api.updateAgent(agentId, updates).catch(console.error);
+  }, [agents, moveTask, showDemoAlert]);
 
   const resetData = useCallback(() => {
+    if (showDemoAlert()) return;
     setTasks(SEED_TASKS);
     setAgents(SEED_AGENTS);
-  }, []);
+  }, [showDemoAlert]);
 
   const filtered = filterWorkstream === "all" ? tasks : tasks.filter(t => t.workstream === filterWorkstream);
   const stats = {
@@ -247,7 +276,7 @@ export default function App() {
               marginTop: 12, padding: "6px 8px", background: MAC.chromeLight,
               border: `1px solid ${MAC.chromeDark}`, fontSize: 10, borderRadius: 2,
             }}>
-              Summer '26 — {stats.done}/{stats.total} tasks complete ({Math.round((stats.done / stats.total) * 100)}%)
+              Summer '26 — {stats.done}/{stats.total} tasks complete ({stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0}%)
             </div>
           </div>
         </MacWindow>

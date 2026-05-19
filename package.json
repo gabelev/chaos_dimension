@@ -1,19 +1,36 @@
 {
   "name": "chaos-dimension",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Retro Mac OS mission control for managing projects and AI agent orchestration",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
+    "db:seed": "node scripts/seed-workstreams.js",
+    "hash-password": "node scripts/hash-password.js"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
+    "@paralleldrive/cuid2": "^3.3.0",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.36.0",
+    "iron-session": "^8.0.4",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.0"
   },
   "devDependencies": {
+    "@testing-library/react": "^16.1.0",
     "@vitejs/plugin-react": "^4.3.4",
-    "vite": "^6.0.0"
+    "drizzle-kit": "^0.28.0",
+    "jsdom": "^25.0.1",
+    "vite": "^6.0.0",
+    "vitest": "^2.1.8"
   }
 }

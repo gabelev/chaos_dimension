@@ -17,13 +17,43 @@ System 7 chrome (striped title bars, beveled buttons, inset borders) because con
 "Chaos dimension" is a lyric from ["Almost Had to Start a Fight / In and Out of Patience"](https://open.spotify.com/track/7xhZCVsVhDSjhFm41mOX10?si=5bc063da68f24a56) by Parquet Courts, a Brooklyn band. Felt about right for a tool that orchestrates several agents trying to do several things at once.
 
 > "Can someone tell me the reason? I'm in the Chaos Dimension. Trapped in a brutal invention." -Parquet Courts
+## How to build and deploy your own Chaos Dimension
 
-## Quick Start
+### Local development
 
 ```bash
+git clone https://github.com/<you>/chaos_dimension
+cd chaos_dimension
 npm install
-npm run dev
+cp .env.example .env.local
+
+# Generate the password hash for your own login
+npm run hash-password
+# Paste the printed bcrypt hash into .env.local as CHAOS_PASSWORD_HASH
+
+# Generate a session secret
+openssl rand -hex 32
+# Paste it into .env.local as CHAOS_SESSION_SECRET
+
+# Get a free Neon Postgres at https://neon.tech
+# Paste the connection string into .env.local as DATABASE_URL
+
+npm run db:push   # create the tables
+npm run db:seed   # seed workstream definitions
+npm run dev       # http://localhost:5173
 ```
+
+For a fuller local run including the serverless `/api/*` handlers, install the Vercel CLI (`npm i -g vercel`) and use `vercel dev` instead of `npm run dev`.
+
+### Deploy to Vercel
+
+1. Push your fork to GitHub.
+2. Import the repo in Vercel.
+3. From the project dashboard, add Neon Postgres via the marketplace (free tier). `DATABASE_URL` is injected automatically.
+4. Set `CHAOS_PASSWORD_HASH` and `CHAOS_SESSION_SECRET` in Vercel env vars.
+5. Leave `CHAOS_PUBLIC_DEMO` and `VITE_PUBLIC_DEMO` unset for a private deploy — visitors get the login screen first. Set both to `true` if you want a public demo landing instead.
+6. Pull the env locally and migrate: `vercel env pull && npm run db:push && npm run db:seed`.
+7. Deploy.
 
 ## Features
 
@@ -31,15 +61,16 @@ npm run dev
 - Agent Monitor with green-on-black terminal logs per agent
 - Workstream color-coding with striped progress bars
 - ⚡ markers on agent-dispatchable tasks (some work is still for humans)
+- Password-gated private mode + optional public demo landing
 
 ## Stack
 
-React 18 + Vite. No backend yet — state is in-memory. That's next.
+React 18 + Vite frontend. Vercel serverless functions for `/api/*`. Neon Postgres + Drizzle ORM for persistence. `iron-session` + bcryptjs for the single-user password gate.
 
 ## Roadmap
 
-- [ ] Database (PostgreSQL or SQLite)
-- [ ] Sign-on screen, Mac OS login dialog style
+- [x] Database (Postgres via Neon)
+- [x] Sign-on screen, Mac OS login dialog style
 - [ ] Agent connection v1: file-based, via Claude Code post-task hooks
 - [ ] Agent connection v2: Anthropic API dispatch with streamed terminal output
 - [ ] Agent connection v3: MCP server so any agent can report back
