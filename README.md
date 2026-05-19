@@ -1,6 +1,6 @@
 # Chaos Dimension
 
-> A note from the author: I wanted a JIRA, but for me. Specifically, a JIRA with a control panel for dispatching coding agents and watching them work. I looked. I did not find. So I built it, and I made it look like a 1991 Macintosh, because if I'm going to stare at a project tracker all day it should at least be fun.
+> A note from the author: I wanted a JIRA, but for me. Specifically, a JIRA with a control panel for dispatching coding agents and watching them work. I looked and did not find one. So I built it, and I made it look like a 1991 Macintosh, because if I'm going to stare at a project tracker all day it should at least be fun.
 
 A retro Mac OS System 7-styled mission control for personal projects and AI agent orchestration. Kanban on the left, agent terminal monitor on the right, blue dither desktop everywhere.
 
