@@ -226,3 +226,10 @@ dist/
 *.local
 .env
 .env.*
+
+# v0.2 additions
+.env
+.env.local
+.env.*.local
+.vercel
+coverage/
