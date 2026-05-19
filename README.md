@@ -16,6 +16,8 @@ System 7 chrome (striped title bars, beveled buttons, inset borders) because con
 
 "Chaos dimension" is a lyric from ["Almost Had to Start a Fight / In and Out of Patience"](https://open.spotify.com/track/7xhZCVsVhDSjhFm41mOX10?si=5bc063da68f24a56) by Parquet Courts, a Brooklyn band. Felt about right for a tool that orchestrates several agents trying to do several things at once.
 
+> "Can someone tell me the reason? I'm in the Chaos Dimension. Trapped in a brutal invention." -Parquet Courts
+
 ## Quick Start
 
 ```bash
