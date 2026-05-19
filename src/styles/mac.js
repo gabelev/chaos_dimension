@@ -11,6 +11,58 @@ export const MAC = {
   highlightText: "#FFFFFF",
   scrollbar: "#CCCCCC",
   titleStripes: "#BBBBBB",
+
+  desktop: {
+    minHeight: "100vh",
+    background: "#5A7DC8",
+    backgroundImage: "repeating-conic-gradient(#5070B8 0% 25%, transparent 0% 50%)",
+    backgroundSize: "4px 4px",
+    fontFamily: `'Geneva', 'Lucida Grande', 'Helvetica Neue', sans-serif`,
+    fontSize: 12,
+  },
+  window: {
+    background: "#DDDDDD",
+    border: "2px solid #000",
+    boxShadow: "4px 4px 0 rgba(0,0,0,0.3)",
+  },
+  titleBar: {
+    height: 20,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    borderBottom: "1px solid #000",
+    fontWeight: "bold",
+    fontSize: 12,
+    backgroundImage: `repeating-linear-gradient(
+      transparent 0px, transparent 1px,
+      #BBBBBB 1px, #BBBBBB 2px,
+      transparent 2px, transparent 3px
+    )`,
+  },
+  input: {
+    width: "100%",
+    padding: "3px 4px",
+    fontSize: 12,
+    fontFamily: `'Geneva', 'Lucida Grande', 'Helvetica Neue', sans-serif`,
+    border: "2px inset #999",
+    background: "#fff",
+  },
+  button: {
+    fontFamily: `'Geneva', 'Lucida Grande', 'Helvetica Neue', sans-serif`,
+    fontSize: 12,
+    padding: "3px 16px",
+    borderRadius: 6,
+    border: "2px solid #000",
+    background: "#DDDDDD",
+    cursor: "pointer",
+  },
+  link: {
+    color: "#000080",
+    textDecoration: "underline",
+    fontFamily: `'Geneva', 'Lucida Grande', 'Helvetica Neue', sans-serif`,
+    fontSize: 12,
+    cursor: "pointer",
+  },
 };
 
 export const FONT = `'Geneva', 'Lucida Grande', 'Helvetica Neue', sans-serif`;
