@@ -1,9 +1,8 @@
 import { getSession } from '../src/lib/requireAuth.js';
+import { withErrors } from '../src/lib/apiHandler.js';
 
-export default async function handleMe(req, res) {
+export default withErrors(async function handleMe(req, res) {
   const session = await getSession(req, res);
-  if (!session.authed) {
-    return res.status(401).json({ authed: false });
-  }
+  if (!session.authed) return res.status(401).json({ authed: false });
   return res.status(200).json({ authed: true });
-}
+});

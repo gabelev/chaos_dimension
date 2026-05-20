@@ -9,7 +9,17 @@ async function request(path, opts = {}) {
     window.location.href = '/login';
     throw new Error('unauthorized');
   }
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  if (!res.ok) {
+    let detail = `${res.status} ${res.statusText || 'Request failed'}`;
+    try {
+      const body = await res.json();
+      if (body?.message) detail = body.message;
+      else if (body?.error) detail = body.error;
+    } catch {
+      // body wasn't JSON; keep the status-line detail
+    }
+    throw new Error(detail);
+  }
   return res.json();
 }
 

@@ -1,9 +1,10 @@
 import { getDb } from '../../src/db/client.js';
 import { tasks } from '../../src/db/schema.js';
 import { requireAuth } from '../../src/lib/requireAuth.js';
+import { withErrors, methodNotAllowed } from '../../src/lib/apiHandler.js';
 import { desc } from 'drizzle-orm';
 
-export default async function handle(req, res) {
+export default withErrors(async function handle(req, res) {
   const session = await requireAuth(req, res);
   if (!session) return;
 
@@ -17,7 +18,7 @@ export default async function handle(req, res) {
   if (req.method === 'POST') {
     const { title, workstream, column = 'backlog', agentDispatchable = false, priority = 'med', notes = '' } = req.body ?? {};
     if (!title || !workstream) {
-      return res.status(400).json({ error: 'title and workstream required' });
+      return res.status(400).json({ error: 'title and workstream required', message: 'Title and workstream are required.' });
     }
     const [row] = await db.insert(tasks).values({
       title, workstream, column, agentDispatchable, priority, notes,
@@ -25,6 +26,5 @@ export default async function handle(req, res) {
     return res.status(201).json(row);
   }
 
-  res.setHeader('Allow', 'GET, POST');
-  return res.status(405).json({ error: 'method not allowed' });
-}
+  return methodNotAllowed(res, 'GET, POST');
+});

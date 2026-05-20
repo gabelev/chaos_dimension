@@ -1,4 +1,5 @@
 import { MAC } from '../styles/mac';
+import Attribution from './Attribution';
 
 export default function AboutDialog({ onClose }) {
   return (
@@ -27,10 +28,16 @@ export default function AboutDialog({ onClose }) {
           <div style={{ fontSize: 11, color: MAC.textDim, marginBottom: 12 }}>
             Summer '26 Mission Control<br />
             Kanban × Agent Orchestration<br />
-            v0.1.0
+            v0.3
+          </div>
+          <div style={{ fontSize: 10, color: MAC.textDim, marginBottom: 12 }}>
+            "Build the tool, then use the tool to build everything else."
           </div>
           <div style={{ fontSize: 10, color: MAC.textDim, marginBottom: 16 }}>
-            "Build the tool, then use the tool to build everything else."
+            <Attribution
+              textStyle={{ color: MAC.textDim }}
+              linkStyle={{ color: MAC.highlight, textDecoration: 'underline' }}
+            />
           </div>
           <button className="mac-btn mac-btn-primary" onClick={onClose} style={{ minWidth: 80 }}>
             OK

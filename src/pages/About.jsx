@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { MAC, GLOBAL_CSS } from '../styles/mac';
+import Attribution from '../components/Attribution';
 
 export default function About() {
   return (
@@ -36,6 +37,9 @@ export default function About() {
             >
               github.com/gabelev/chaos_dimension
             </a>
+          </p>
+          <p style={{ marginBottom: 12 }}>
+            <Attribution linkStyle={MAC.link} />
           </p>
           <p style={{ marginTop: 20 }}>
             <Link to="/" style={MAC.link}>← Back</Link>

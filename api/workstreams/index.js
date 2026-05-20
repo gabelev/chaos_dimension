@@ -1,6 +1,7 @@
 import { getDb } from '../../src/db/client.js';
 import { workstreams } from '../../src/db/schema.js';
 import { requireAuth } from '../../src/lib/requireAuth.js';
+import { withErrors, methodNotAllowed } from '../../src/lib/apiHandler.js';
 import { eq } from 'drizzle-orm';
 
 function slugify(s) {
@@ -12,7 +13,17 @@ function slugify(s) {
     .slice(0, 64);
 }
 
-export default async function handle(req, res) {
+async function nextAvailableId(db, baseId) {
+  const exists = async (id) => (await db.select().from(workstreams).where(eq(workstreams.id, id))).length > 0;
+  if (!(await exists(baseId))) return baseId;
+  for (let n = 2; n <= 100; n += 1) {
+    const candidate = `${baseId}-${n}`;
+    if (!(await exists(candidate))) return candidate;
+  }
+  return null;
+}
+
+export default withErrors(async function handle(req, res) {
   const session = await requireAuth(req, res);
   if (!session) return;
 
@@ -24,29 +35,32 @@ export default async function handle(req, res) {
   }
 
   if (req.method === 'POST') {
-    const { label, color, icon, id: providedId } = req.body ?? {};
-    if (!label || !color || !icon) {
-      return res.status(400).json({ error: 'label, color, and icon required' });
+    const body = req.body ?? {};
+    const label = typeof body.label === 'string' ? body.label.trim() : '';
+    const color = typeof body.color === 'string' ? body.color.trim() : '';
+    const icon = typeof body.icon === 'string' ? body.icon.trim() : '';
+    const providedId = typeof body.id === 'string' ? body.id : '';
+
+    if (!label) return res.status(400).json({ error: 'label required', message: 'Workstream name is required.' });
+    if (!color) return res.status(400).json({ error: 'color required', message: 'Color is required.' });
+    if (!icon) return res.status(400).json({ error: 'icon required', message: 'Icon is required.' });
+
+    const baseId = slugify(providedId || label);
+    if (!baseId) {
+      return res.status(400).json({
+        error: 'invalid id',
+        message: 'Could not derive a URL-safe id from the label. Try adding letters or numbers.',
+      });
     }
 
-    let id = providedId ? slugify(providedId) : slugify(label);
+    const id = await nextAvailableId(db, baseId);
     if (!id) {
-      return res.status(400).json({ error: 'could not derive a valid id from label' });
-    }
-
-    const existing = await db.select().from(workstreams).where(eq(workstreams.id, id));
-    if (existing.length) {
-      let n = 2;
-      while ((await db.select().from(workstreams).where(eq(workstreams.id, `${id}-${n}`))).length) {
-        n += 1;
-      }
-      id = `${id}-${n}`;
+      return res.status(409).json({ error: 'id collision', message: 'Too many workstreams with this name.' });
     }
 
     const [row] = await db.insert(workstreams).values({ id, label, color, icon }).returning();
     return res.status(201).json(row);
   }
 
-  res.setHeader('Allow', 'GET, POST');
-  return res.status(405).json({ error: 'method not allowed' });
-}
+  return methodNotAllowed(res, 'GET, POST');
+});
