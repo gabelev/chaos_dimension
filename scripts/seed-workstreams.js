@@ -1,4 +1,7 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
+dotenv.config({ path: '.env' });
+
 import { getDb } from '../src/db/client.js';
 import { workstreams } from '../src/db/schema.js';
 import { WORKSTREAMS } from '../src/data/workstreams.js';
