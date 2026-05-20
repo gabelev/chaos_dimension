@@ -53,6 +53,8 @@ export const runs = pgTable('runs', {
   notes: text('notes').notNull().default(''),
 });
 
+// OAuth tables: FK constraints intentionally omitted.
+// Integrity enforced at the application layer (see docs/superpowers/plans/2026-05-20-oauth-for-mcp.md).
 export const oauthClients = pgTable('oauth_clients', {
   id: text('id').primaryKey().$defaultFn(() => createId()),
   clientId: text('client_id').notNull().unique(),
