@@ -91,9 +91,14 @@ Lets Claude Code (or any MCP client) read and write your tasks, claim work, and 
 
 4. **(Optional) Enable auto-tracking.** Paste the snippet from `docs/integration/CLAUDE.md.snippet` into a project's `CLAUDE.md` or your global `~/.claude/CLAUDE.md`. Claude will ask before creating tasks for non-trivial work and report progress as it goes.
 
-### Claude Desktop and claude.ai (web): not yet supported
+### Connect Claude Desktop or claude.ai (web) via OAuth
 
-The "Add custom connector" dialog in Claude Desktop and claude.ai only accepts OAuth 2.1, not the static bearer tokens the chaos-dimension MCP server currently uses. Adding OAuth support is on the roadmap — until then, use Claude Code.
+The MCP server speaks OAuth 2.1 with Dynamic Client Registration, so the connector dialog can self-register without any token wrangling.
+
+1. In **Claude Desktop** or **claude.ai** → Settings → Connectors → **Add custom connector**.
+2. **URL:** `https://www.your-deploy.fyi/api/mcp` (replace with your deploy host).
+3. Leave OAuth Client ID and Client Secret blank — the connector registers itself automatically.
+4. Click **Add**. Claude opens a browser tab on your dashboard for password login + a consent screen. Click **Allow** and the dance completes; the chaos-dimension tools appear in any new chat.
 
 Full MCP setup details and troubleshooting: see [`docs/integration/README.md`](docs/integration/README.md).
 
@@ -121,7 +126,7 @@ React 18 + Vite frontend. Vercel serverless functions for `/api/*`. Neon Postgre
 - [x] Multi-theme system (Classic / Minimal / Terminal / Modern)
 - [x] Interactive demo board with localStorage persistence
 - [x] MCP server (v0.4) — Claude Code claims and updates tasks via standard MCP tools
-- [ ] OAuth 2.1 + dynamic client registration on `/api/mcp` so Claude Desktop and claude.ai web can connect
+- [x] OAuth 2.1 + dynamic client registration on `/api/mcp` so Claude Desktop and claude.ai web can connect
 - [ ] AIM Messenger-style chat panel that routes to the Anthropic API
 - [ ] Settings → API Keys management UI (currently CLI-only)
 - [ ] Cloud orchestrator: ephemeral containers that run agent tasks while your laptop is closed

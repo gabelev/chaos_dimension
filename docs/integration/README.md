@@ -84,3 +84,21 @@ Mint a new one with a different label (`--label macbook-2`). The old token can b
 ## Why this is bidirectional
 
 The MCP server lets Claude both *read* CD state (`list_tasks`, `list_workstreams`) and *write* it (`create_task`, `claim_task`, `report_progress`, `update_task`). The combination is what enables the auto-tracking pattern in the CLAUDE.md snippet.
+
+## Connecting Claude Desktop / claude.ai web
+
+The MCP endpoint also speaks OAuth 2.1 with Dynamic Client Registration, so the connector UI in Claude Desktop and claude.ai can register itself — no token minting required:
+
+1. Settings → Connectors → **Add custom connector**.
+2. **URL:** `https://www.your-deploy.fyi/api/mcp` (replace with your deploy host — use the `www.` form if your apex redirects there).
+3. Leave OAuth Client ID and Client Secret blank.
+4. Click **Add**. A browser tab opens to your dashboard for password login + consent. Approve, and the connector lights up.
+
+Each consenting client gets a synthetic "agent" row in the dashboard (named after the OAuth client) so progress reports from Desktop/web show up in the Agent Monitor alongside agents dispatched from Claude Code.
+
+### OAuth troubleshooting
+
+- **"invalid_redirect_uri"** — the redirect URI in the connector setup must exactly match one of the URIs the client sent during registration. Remove the connector and add it again to re-register.
+- **Stuck on the consent page** — make sure you're logged into the dashboard in the same browser. The consent page calls `/api/oauth/authorize/pending`, which requires the `chaos_session` cookie.
+- **Connector reports "invalid_grant" after some time** — the access token is 1h. Claude should refresh automatically; if it doesn't, remove and re-add the connector. Reusing a refresh token (or an authorization code) revokes the entire token chain for that client by design.
+- **Bearer `cd_...` agent-token from Claude Code stops working** — OAuth runs in parallel and never touches the legacy `agent_tokens` table. If Claude Code regresses, the issue is unrelated to OAuth; verify the token starts with `cd_` and not `cd_oat_`.
