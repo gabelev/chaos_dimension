@@ -29,7 +29,13 @@ export function verifyPkceS256(verifier, challenge) {
   return timingSafeEqual(Buffer.from(computed), Buffer.from(challenge));
 }
 
+// Short-lived HMAC-signed envelope. Intended for in-flight CSRF/state binding,
+// not for general-purpose tokens. The serialized object must not contain an
+// `exp` key — it's reserved for the expiry stamp.
 export function signPayload(obj, secret, ttlSeconds) {
+  if (obj && typeof obj === 'object' && 'exp' in obj) {
+    throw new Error('signPayload: payload may not contain reserved key "exp"');
+  }
   const payload = { ...obj, exp: Math.floor(Date.now() / 1000) + ttlSeconds };
   const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
   const sig = createHmac('sha256', secret).update(body).digest('base64url');

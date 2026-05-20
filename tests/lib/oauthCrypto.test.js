@@ -61,4 +61,17 @@ describe('oauthCrypto', () => {
     const tampered = sig.slice(0, -2) + 'AA';
     expect(verifyPayload(tampered, secret)).toBeNull();
   });
+
+  it('rejects a tampered body in a signed payload', () => {
+    const secret = 'a'.repeat(32);
+    const sig = signPayload({ x: 1 }, secret, 60);
+    const [body, sigPart] = sig.split('.');
+    const tamperedBody = body.slice(0, -2) + 'AA' + '.' + sigPart;
+    expect(verifyPayload(tamperedBody, secret)).toBeNull();
+  });
+
+  it('refuses to sign a payload containing reserved key "exp"', () => {
+    const secret = 'a'.repeat(32);
+    expect(() => signPayload({ exp: 1234 }, secret, 60)).toThrow();
+  });
 });
