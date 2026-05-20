@@ -19,7 +19,7 @@ The script prints a JSON block. Copy the `cd_xxx...` token from it. **The raw to
 **Easiest path — use the Claude Code CLI:**
 
 ```bash
-claude mcp add --transport http chaos-dimension https://chaosdimension.fyi/api/mcp --header "Authorization: Bearer cd_paste-your-token-here"
+claude mcp add --transport http chaos-dimension https://www.chaosdimension.fyi/api/mcp --header "Authorization: Bearer cd_paste-your-token-here"
 ```
 
 This writes the config in the right place with the right format.
@@ -31,7 +31,7 @@ This writes the config in the right place with the right format.
   "mcpServers": {
     "chaos-dimension": {
       "type": "http",
-      "url": "https://chaosdimension.fyi/api/mcp",
+      "url": "https://www.chaosdimension.fyi/api/mcp",
       "headers": {
         "Authorization": "Bearer cd_paste-your-token-here"
       }

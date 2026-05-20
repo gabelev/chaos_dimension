@@ -49,7 +49,7 @@ async function main() {
   console.log('\nMCP API key minted. Add this block to ~/.claude/.mcp.json under mcpServers:\n');
   console.log(JSON.stringify({
     'chaos-dimension': {
-      url: 'https://chaosdimension.fyi/api/mcp',
+      url: 'https://www.chaosdimension.fyi/api/mcp',
       headers: { Authorization: `Bearer ${result.body.token}` },
     },
   }, null, 2));
