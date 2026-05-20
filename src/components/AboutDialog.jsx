@@ -15,7 +15,7 @@ export default function AboutDialog({ onClose }) {
           v0.3
         </div>
         <div style={{ fontSize: 10, color: theme.textDim, marginBottom: 12, fontStyle: 'italic' }}>
-          "Build the tool, then use the tool to build everything else."
+          I wanted a light weight Jira to seamlessly integrate with claude code and track agent progress for all my projects.
         </div>
         <div style={{ fontSize: 10, color: theme.textDim, marginBottom: 16 }}>
           <Attribution
