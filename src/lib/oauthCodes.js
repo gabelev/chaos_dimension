@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, and, isNull } from 'drizzle-orm';
 import { oauthAuthCodes } from '../db/schema.js';
 import { generateOauthToken, hashToken, PREFIX_CODE } from './oauthCrypto.js';
 
@@ -33,6 +33,13 @@ export async function consumeAuthCode(db, code) {
   const row = rows[0];
   if (row.consumedAt) return { ok: false, reason: 'reuse', row };
   if (new Date(row.expiresAt).getTime() < Date.now()) return { ok: false, reason: 'expired', row };
-  await db.update(oauthAuthCodes).set({ consumedAt: new Date() }).where(eq(oauthAuthCodes.id, row.id));
+  // Conditional update closes the TOCTOU window between the select above and
+  // the consume below: two concurrent callers race here, only one wins.
+  const updated = await db
+    .update(oauthAuthCodes)
+    .set({ consumedAt: new Date() })
+    .where(and(eq(oauthAuthCodes.id, row.id), isNull(oauthAuthCodes.consumedAt)))
+    .returning();
+  if (!updated?.length) return { ok: false, reason: 'reuse', row };
   return { ok: true, row };
 }

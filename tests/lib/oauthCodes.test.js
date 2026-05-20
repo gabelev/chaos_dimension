@@ -12,7 +12,28 @@ function makeDb(initial = []) {
         where: () => ({ limit: async (n) => rows.slice(0, n) }),
       }),
     }),
-    update: () => ({ set: (patch) => ({ where: async () => { Object.assign(rows[0] ?? {}, patch); return [rows[0]]; } }) }),
+    update: () => ({
+      set: (patch) => ({
+        where: () => {
+          // The only conditional update in oauthCodes is `consumedAt IS NULL`,
+          // so simulate that semantics directly: if the row's consumedAt was
+          // already set, the conditional update returns no rows; otherwise it
+          // applies and returns the updated row. Memoize so awaiting both the
+          // where() result and chained .returning() doesn't double-apply.
+          let result;
+          const apply = async () => {
+            if (result !== undefined) return result;
+            if (!rows[0]) { result = []; return result; }
+            if ('consumedAt' in patch && rows[0].consumedAt != null) { result = []; return result; }
+            Object.assign(rows[0], patch);
+            result = [rows[0]];
+            return result;
+          };
+          const thenable = { then: (res, rej) => apply().then(res, rej), returning: apply };
+          return thenable;
+        },
+      }),
+    }),
   };
 }
 
