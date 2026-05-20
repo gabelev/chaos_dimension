@@ -4,6 +4,10 @@
 
 A retro Mac OS System 7-styled mission control for personal projects and AI agent orchestration. Kanban on the left, agent terminal monitor on the right, blue dither desktop everywhere.
 
+![Chaos Dimension demo board](screenshots/demo.png)
+
+Live demo: [chaosdimension.fyi](https://chaosdimension.fyi)
+
 ## Why
 
 Modern project trackers are bloated, modern UIs are beige, and none of them have a column for "this task is currently being worked on by a Claude agent in a tmux pane somewhere." Chaos Dimension fixes all three problems.
