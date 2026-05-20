@@ -129,7 +129,21 @@ React 18 + Vite frontend. Vercel serverless functions for `/api/*`. Neon Postgre
 
 ## Contributing
 
-If you also want a JIRA that looks like a 1991 Macintosh: PRs welcome. Keep the aesthetic. No rounded corners. No em-dashes in UI copy.
+Contributions are welcome. This is a small project with one maintainer, so please open an issue before starting non-trivial work so we can align on scope.
+
+**Filing issues.** Bugs: include steps to reproduce, what you expected, what happened, and your browser + OS. Feature requests: describe the use case, not just the feature.
+
+**Pull requests.**
+
+1. Fork the repo and create a topic branch off `main`.
+2. Run `npm install` and follow the [Local development](#local-development) setup.
+3. Make your change. Keep commits focused and write a clear commit message that explains the why.
+4. Add or update tests where it makes sense. Run `npm test` before pushing.
+5. Open a PR against `main`. Link the related issue if there is one. Small, focused PRs get reviewed faster than sprawling ones.
+
+**Code style.** Match what's already there. No new dependencies without discussion. No em-dashes in UI copy (docs are fine). If you're touching the UI, run it in a browser and confirm the change looks right.
+
+**Code of conduct.** Be kind. Disagree on the technical merits, not the person.
 
 ## License
 
