@@ -3,18 +3,13 @@ dotenv.config({ path: '.env.local' });
 dotenv.config({ path: '.env' });
 
 import readline from 'node:readline';
-import { verifyPassword } from '../src/lib/passwords.js';
 import { mintTokenLogic } from '../api/agent-tokens/index.js';
 import { getDb } from '../src/db/client.js';
 
-function prompt(q, { masked = false } = {}) {
+function prompt(q) {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  if (masked) {
-    rl._writeToOutput = () => {};
-  }
   return new Promise((res) => rl.question(q, (a) => {
     rl.close();
-    if (masked) process.stdout.write('\n');
     res(a);
   }));
 }
@@ -28,24 +23,26 @@ function parseArgs(argv) {
 }
 
 async function main() {
-  const args = parseArgs(process.argv.slice(2));
-  const label = args.label || (await prompt('Token label (e.g. macbook): ')).trim();
-  if (!label) {
-    console.error('Label is required.');
+  if (!process.env.DATABASE_URL) {
+    console.error('\nDATABASE_URL is not set in .env.local. Add it (copy from Vercel or Neon) and re-run.\n');
     process.exit(1);
   }
 
-  const password = await prompt('Owner password: ', { masked: true });
-  const ok = await verifyPassword(password, process.env.CHAOS_PASSWORD_HASH);
-  if (!ok) {
-    console.error('Invalid password.');
+  const args = parseArgs(process.argv.slice(2));
+
+  console.log('\nMint a new MCP API token for Chaos Dimension.');
+  console.log('(Local script — no password required. Possession of DATABASE_URL is the credential.)\n');
+
+  const label = args.label || (await prompt('Token label (e.g. "macbook"): ')).trim();
+  if (!label) {
+    console.error('Label is required.');
     process.exit(1);
   }
 
   const db = getDb();
   const result = await mintTokenLogic({ db, body: { label } });
   if (result.status !== 201) {
-    console.error('Mint failed:', result.body);
+    console.error('\nMint failed:', result.body, '\n');
     process.exit(1);
   }
 

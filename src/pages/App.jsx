@@ -232,9 +232,10 @@ export default function App({ mode = 'live' }) {
         </MenuBarItem>
         <MenuBarItem label="Agents" active={activeMenu === "agents"} onClick={(e) => { e.stopPropagation(); setActiveMenu(activeMenu === "agents" ? null : "agents"); }}>
           {activeMenu === "agents" && (
-            <MenuDropdown items={agents.map(a => ({
-              label: `${a.name}: ${a.status}`, disabled: true,
-            }))} />
+            <MenuDropdown items={agents.length === 0
+              ? [{ label: 'None', disabled: true }]
+              : agents.map(a => ({ label: `${a.name}: ${a.status}`, disabled: true }))
+            } />
           )}
         </MenuBarItem>
         <MenuBarItem label="Theme" active={activeMenu === "theme"} onClick={(e) => { e.stopPropagation(); setActiveMenu(activeMenu === "theme" ? null : "theme"); }}>
