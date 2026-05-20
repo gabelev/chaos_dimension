@@ -62,10 +62,22 @@ export async function rotateRefreshToken(db, refreshToken) {
   }
   if (new Date(row.expiresAt).getTime() < Date.now()) return { ok: false, reason: 'expired' };
 
-  await db.update(oauthRefreshTokens).set({ revokedAt: new Date() }).where(eq(oauthRefreshTokens.id, row.id));
+  // Conditional update closes the TOCTOU window: if two concurrent callers
+  // both passed the revokedAt check above, only one wins the UPDATE. The
+  // loser falls through to the reuse path and burns the entire token chain.
+  const consumed = await db
+    .update(oauthRefreshTokens)
+    .set({ revokedAt: new Date() })
+    .where(and(eq(oauthRefreshTokens.id, row.id), isNull(oauthRefreshTokens.revokedAt)))
+    .returning();
+  if (!consumed?.length) {
+    await revokeChain(db, row.clientId);
+    return { ok: false, reason: 'reuse', clientId: row.clientId };
+  }
   if (row.accessTokenId) {
     await db.update(oauthAccessTokens).set({ revokedAt: new Date() }).where(eq(oauthAccessTokens.id, row.accessTokenId));
   }
+  // v1 scope is locked to 'mcp'. If multi-scope arrives later, source from row.
   const next = await issueTokenPair(db, { clientId: row.clientId, scope: 'mcp' });
   return { ok: true, ...next, clientId: row.clientId };
 }
