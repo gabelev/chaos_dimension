@@ -1,5 +1,5 @@
 export const WORKSTREAMS = {
-  "second-seat": { label: "Second Seat", color: "#8B0000", icon: "⚖️" },
+  "legal-ai": { label: "Legal AI", color: "#8B0000", icon: "⚖️" },
   "emergent-creativity": { label: "Emergent Creativity", color: "#4B0082", icon: "🧠" },
   "generative-retrieval": { label: "Gen. Retrieval", color: "#006400", icon: "🔍" },
   "generative-art": { label: "Generative Art", color: "#B8860B", icon: "🎨" },

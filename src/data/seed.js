@@ -1,7 +1,7 @@
 export const SEED_TASKS = [
-  { id: "t1", title: "Citator infrastructure (KeyCite equiv)", workstream: "second-seat", column: "backlog", agentDispatchable: true, priority: "high", notes: "Most critical infrastructure gap." },
-  { id: "t2", title: "CourtListener rate limit optimization", workstream: "second-seat", column: "backlog", agentDispatchable: true, priority: "med", notes: "" },
-  { id: "t3", title: "Firm pivot — case intake workflow", workstream: "second-seat", column: "backlog", agentDispatchable: false, priority: "high", notes: "Design case intake, assignment, and billing flow." },
+  { id: "t1", title: "Citator infrastructure (KeyCite equiv)", workstream: "legal-ai", column: "backlog", agentDispatchable: true, priority: "high", notes: "Most critical infrastructure gap." },
+  { id: "t2", title: "CourtListener rate limit optimization", workstream: "legal-ai", column: "backlog", agentDispatchable: true, priority: "med", notes: "" },
+  { id: "t3", title: "Firm pivot — case intake workflow", workstream: "legal-ai", column: "backlog", agentDispatchable: false, priority: "high", notes: "Design case intake, assignment, and billing flow." },
   { id: "t4", title: "Lit review — emergence in multi-agent systems", workstream: "emergent-creativity", column: "backlog", agentDispatchable: true, priority: "high", notes: "" },
   { id: "t5", title: "Define experimental framework for putu.ai", workstream: "emergent-creativity", column: "backlog", agentDispatchable: false, priority: "med", notes: "What constitutes 'emergent creativity'?" },
   { id: "t6", title: "putu.ai — inter-agent coordination", workstream: "emergent-creativity", column: "backlog", agentDispatchable: true, priority: "high", notes: "Collab/beef/recruit mechanics." },

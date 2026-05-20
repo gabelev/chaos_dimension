@@ -1,16 +1,48 @@
 import { Link } from 'react-router-dom';
-import { MAC, GLOBAL_CSS } from '../styles/mac';
+import { useTheme } from '../themes';
 import Attribution from '../components/Attribution';
 
 export default function About() {
+  const { theme } = useTheme();
   return (
-    <div style={{ ...MAC.desktop, padding: 24, overflow: 'auto' }}>
-      <style>{GLOBAL_CSS}</style>
-      <div style={{ ...MAC.window, maxWidth: 640, margin: '40px auto' }}>
-        <div style={MAC.titleBar}>
-          <span style={{ background: MAC.chrome, padding: '0 10px' }}>About Chaos Dimension</span>
+    <div style={{ ...theme.desktop, padding: 24, overflow: 'auto' }}>
+      <div
+        style={{
+          background: theme.chrome,
+          border: theme.windowBorder,
+          maxWidth: 640,
+          margin: '40px auto',
+          boxShadow: theme.windowShadow || '4px 4px 0 rgba(0,0,0,0.3)',
+          color: theme.text,
+          fontFamily: theme.FONT,
+          borderRadius: theme.window.borderRadius || 0,
+          overflow: 'hidden',
+        }}
+      >
+        <div style={{
+          height: theme.titleBar.height || 22,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: theme.id === 'classic' ? 'center' : 'flex-start',
+          paddingLeft: theme.id === 'classic' ? 0 : 12,
+          borderBottom: theme.titleBar.borderBottom || `1px solid ${theme.border}`,
+          fontWeight: 'bold',
+          fontSize: theme.titleBar.fontSize || 12,
+          background: theme.titleBarBg,
+          backgroundImage: theme.titleBarBgImage,
+          color: theme.titleTextColor,
+          textTransform: theme.titleBar.textTransform || 'none',
+          letterSpacing: theme.titleBar.letterSpacing || 'normal',
+        }}>
+          <span style={{
+            background: theme.titleTextBg,
+            padding: theme.id === 'classic' ? '0 10px' : '0',
+            color: theme.titleTextColor,
+          }}>
+            {theme.id === 'terminal' ? '── About Chaos Dimension ──' : 'About Chaos Dimension'}
+          </span>
         </div>
-        <div style={{ padding: 20, background: '#fff', lineHeight: 1.6 }}>
+        <div style={{ padding: 20, background: theme.windowBg, lineHeight: 1.6 }}>
           <p style={{ marginBottom: 12 }}>
             I wanted a JIRA, but for me. A control panel for dispatching coding agents and watching them work.
             I built it, and made it look like a 1991 Macintosh.
@@ -21,7 +53,7 @@ export default function About() {
               href="https://open.spotify.com/track/7xhZCVsVhDSjhFm41mOX10"
               target="_blank"
               rel="noreferrer"
-              style={MAC.link}
+              style={theme.link}
             >
               "Almost Had to Start a Fight / In and Out of Patience"
             </a>{' '}
@@ -33,16 +65,16 @@ export default function About() {
               href="https://github.com/gabelev/chaos_dimension"
               target="_blank"
               rel="noreferrer"
-              style={MAC.link}
+              style={theme.link}
             >
               github.com/gabelev/chaos_dimension
             </a>
           </p>
           <p style={{ marginBottom: 12 }}>
-            <Attribution linkStyle={MAC.link} />
+            <Attribution linkStyle={theme.link} />
           </p>
           <p style={{ marginTop: 20 }}>
-            <Link to="/" style={MAC.link}>← Back</Link>
+            <Link to="/" style={theme.link}>← Back</Link>
           </p>
         </div>
       </div>

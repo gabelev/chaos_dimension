@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
 import App from './App';
-import { MAC } from '../styles/mac';
+import { useTheme } from '../themes';
 
 export default function Landing() {
+  const { theme } = useTheme();
   return (
     <div style={{ position: 'relative' }}>
       <div
@@ -11,19 +12,43 @@ export default function Landing() {
           top: 28,
           right: 8,
           zIndex: 9999,
-          background: MAC.chrome,
-          border: '2px solid #000',
-          boxShadow: '3px 3px 0 rgba(0,0,0,0.3)',
+          background: theme.chrome,
+          border: theme.windowBorder,
+          boxShadow: theme.windowShadow || '3px 3px 0 rgba(0,0,0,0.3)',
           minWidth: 220,
+          borderRadius: theme.window.borderRadius || 0,
+          overflow: 'hidden',
+          fontFamily: theme.FONT,
+          color: theme.text,
         }}
       >
-        <div style={{ ...MAC.titleBar, height: 18 }}>
-          <span style={{ background: MAC.chrome, padding: '0 8px', fontSize: 11 }}>Demo</span>
+        <div style={{
+          height: theme.titleBar.height || 18,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: theme.id === 'classic' ? 'center' : 'flex-start',
+          paddingLeft: theme.id === 'classic' ? 0 : 10,
+          borderBottom: theme.titleBar.borderBottom || `1px solid ${theme.border}`,
+          fontWeight: 'bold',
+          fontSize: 11,
+          background: theme.titleBarBg,
+          backgroundImage: theme.titleBarBgImage,
+          color: theme.titleTextColor,
+          textTransform: theme.titleBar.textTransform || 'none',
+          letterSpacing: theme.titleBar.letterSpacing || 'normal',
+        }}>
+          <span style={{
+            background: theme.titleTextBg,
+            padding: theme.id === 'classic' ? '0 8px' : '0',
+            color: theme.titleTextColor,
+          }}>
+            {theme.id === 'terminal' ? '── Demo ──' : 'Demo'}
+          </span>
         </div>
         <div
           style={{
             padding: '8px 10px',
-            background: '#fff',
+            background: theme.windowBg,
             display: 'flex',
             flexDirection: 'column',
             gap: 4,
@@ -34,14 +59,14 @@ export default function Landing() {
             href="https://github.com/gabelev/chaos_dimension"
             target="_blank"
             rel="noreferrer"
-            style={MAC.link}
+            style={theme.link}
           >
             → View source on GitHub
           </a>
-          <Link to="/about" style={MAC.link}>
+          <Link to="/about" style={theme.link}>
             → About this project
           </Link>
-          <Link to="/login" style={MAC.link}>
+          <Link to="/login" style={theme.link}>
             → Owner login
           </Link>
         </div>
