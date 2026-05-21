@@ -12,6 +12,7 @@
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:seed": "node scripts/seed-workstreams.js",
+    "db:migrate-multi-tenant": "node scripts/migrate-multi-tenant.js",
     "hash-password": "node scripts/hash-password.js",
     "mint-api-key": "node scripts/mint-api-key.js"
   },
