@@ -1,14 +1,17 @@
 import { eq, and, desc } from 'drizzle-orm';
 import { getDb } from '../db/client.js';
 import { tasks, agents, workstreams } from '../db/schema.js';
+import { withUserContext } from './userContext.js';
 
 const TOOL_DEFS = [
   {
     name: 'list_workstreams',
     description: 'List all workstreams (id, label, color, icon).',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
-    handler: async ({ db }) => {
-      return db.select().from(workstreams);
+    handler: async ({ db, userId }) => {
+      return withUserContext(db, userId, async (tx) => {
+        return tx.select().from(workstreams);
+      });
     },
   },
   {
@@ -24,15 +27,17 @@ const TOOL_DEFS = [
       },
       additionalProperties: false,
     },
-    handler: async ({ db, input }) => {
-      const conds = [];
-      if (input.workstream) conds.push(eq(tasks.workstream, input.workstream));
-      if (input.column) conds.push(eq(tasks.column, input.column));
-      if (input.priority) conds.push(eq(tasks.priority, input.priority));
-      const limit = Math.min(input.limit ?? 20, 200);
-      let q = db.select().from(tasks);
-      if (conds.length) q = q.where(and(...conds));
-      return q.orderBy(desc(tasks.createdAt)).limit(limit);
+    handler: async ({ db, userId, input }) => {
+      return withUserContext(db, userId, async (tx) => {
+        const conds = [];
+        if (input.workstream) conds.push(eq(tasks.workstream, input.workstream));
+        if (input.column) conds.push(eq(tasks.column, input.column));
+        if (input.priority) conds.push(eq(tasks.priority, input.priority));
+        const limit = Math.min(input.limit ?? 20, 200);
+        let q = tx.select().from(tasks);
+        if (conds.length) q = q.where(and(...conds));
+        return q.orderBy(desc(tasks.createdAt)).limit(limit);
+      });
     },
   },
   {
@@ -44,10 +49,12 @@ const TOOL_DEFS = [
       required: ['id'],
       additionalProperties: false,
     },
-    handler: async ({ db, input }) => {
-      const rows = await db.select().from(tasks).where(eq(tasks.id, input.id)).limit(1);
-      if (!rows.length) throw new Error('task not found');
-      return rows[0];
+    handler: async ({ db, userId, input }) => {
+      return withUserContext(db, userId, async (tx) => {
+        const rows = await tx.select().from(tasks).where(eq(tasks.id, input.id)).limit(1);
+        if (!rows.length) throw new Error('task not found');
+        return rows[0];
+      });
     },
   },
   {
@@ -67,22 +74,25 @@ const TOOL_DEFS = [
       required: ['title', 'workstream'],
       additionalProperties: false,
     },
-    handler: async ({ db, input }) => {
+    handler: async ({ db, userId, input }) => {
       if (!input.title?.trim()) throw new Error('title required');
       if (!input.workstream?.trim()) throw new Error('workstream required');
-      const [row] = await db
-        .insert(tasks)
-        .values({
-          title: input.title.trim(),
-          workstream: input.workstream,
-          column: input.column ?? 'backlog',
-          priority: input.priority ?? 'med',
-          notes: input.notes ?? '',
-          agentDispatchable: input.agentDispatchable ?? false,
-          remoteRunnable: input.remoteRunnable ?? false,
-        })
-        .returning();
-      return row;
+      return withUserContext(db, userId, async (tx) => {
+        const [row] = await tx
+          .insert(tasks)
+          .values({
+            title: input.title.trim(),
+            workstream: input.workstream,
+            column: input.column ?? 'backlog',
+            priority: input.priority ?? 'med',
+            notes: input.notes ?? '',
+            agentDispatchable: input.agentDispatchable ?? false,
+            remoteRunnable: input.remoteRunnable ?? false,
+            userId,
+          })
+          .returning();
+        return row;
+      });
     },
   },
   {
@@ -103,7 +113,7 @@ const TOOL_DEFS = [
       required: ['id'],
       additionalProperties: false,
     },
-    handler: async ({ db, input }) => {
+    handler: async ({ db, userId, input }) => {
       if (!input.id) throw new Error('id required');
       const ALLOWED = ['title', 'workstream', 'column', 'priority', 'notes', 'agentDispatchable', 'remoteRunnable'];
       const updates = {};
@@ -112,9 +122,11 @@ const TOOL_DEFS = [
       }
       if (Object.keys(updates).length === 0) throw new Error('no fields to update');
       updates.updatedAt = new Date();
-      const [row] = await db.update(tasks).set(updates).where(eq(tasks.id, input.id)).returning();
-      if (!row) throw new Error('task not found');
-      return row;
+      return withUserContext(db, userId, async (tx) => {
+        const [row] = await tx.update(tasks).set(updates).where(eq(tasks.id, input.id)).returning();
+        if (!row) throw new Error('task not found');
+        return row;
+      });
     },
   },
   {
@@ -126,21 +138,23 @@ const TOOL_DEFS = [
       required: ['id'],
       additionalProperties: false,
     },
-    handler: async ({ db, input, agentId }) => {
+    handler: async ({ db, userId, input, agentId }) => {
       if (!input.id) throw new Error('id required');
       if (!agentId) throw new Error('agent context required');
-      const [taskRow] = await db
-        .update(tasks)
-        .set({ column: 'active', updatedAt: new Date() })
-        .where(eq(tasks.id, input.id))
-        .returning();
-      if (!taskRow) throw new Error('task not found');
-      await db
-        .update(agents)
-        .set({ taskId: input.id, status: 'running', startedAt: new Date() })
-        .where(eq(agents.id, agentId))
-        .returning();
-      return taskRow;
+      return withUserContext(db, userId, async (tx) => {
+        const [taskRow] = await tx
+          .update(tasks)
+          .set({ column: 'active', updatedAt: new Date() })
+          .where(eq(tasks.id, input.id))
+          .returning();
+        if (!taskRow) throw new Error('task not found');
+        await tx
+          .update(agents)
+          .set({ taskId: input.id, status: 'running', startedAt: new Date() })
+          .where(eq(agents.id, agentId))
+          .returning();
+        return taskRow;
+      });
     },
   },
   {
@@ -155,20 +169,22 @@ const TOOL_DEFS = [
       required: ['id', 'message'],
       additionalProperties: false,
     },
-    handler: async ({ db, input }) => {
+    handler: async ({ db, userId, input }) => {
       if (!input.id || !input.message) throw new Error('id and message required');
-      const rows = await db.select().from(tasks).where(eq(tasks.id, input.id)).limit(1);
-      if (!rows.length) throw new Error('task not found');
-      const stamp = new Date().toISOString().slice(11, 16); // HH:MM
-      const appended = rows[0].notes
-        ? `${rows[0].notes}\n[${stamp}] ${input.message}`
-        : `[${stamp}] ${input.message}`;
-      const [row] = await db
-        .update(tasks)
-        .set({ notes: appended, updatedAt: new Date() })
-        .where(eq(tasks.id, input.id))
-        .returning();
-      return row;
+      return withUserContext(db, userId, async (tx) => {
+        const rows = await tx.select().from(tasks).where(eq(tasks.id, input.id)).limit(1);
+        if (!rows.length) throw new Error('task not found');
+        const stamp = new Date().toISOString().slice(11, 16); // HH:MM
+        const appended = rows[0].notes
+          ? `${rows[0].notes}\n[${stamp}] ${input.message}`
+          : `[${stamp}] ${input.message}`;
+        const [row] = await tx
+          .update(tasks)
+          .set({ notes: appended, updatedAt: new Date() })
+          .where(eq(tasks.id, input.id))
+          .returning();
+        return row;
+      });
     },
   },
 ];
@@ -180,5 +196,5 @@ export async function runTool(name, input, ctx = {}) {
   const tool = TOOLS_BY_NAME[name];
   if (!tool) throw new Error(`unknown tool: ${name}`);
   const db = ctx.db ?? getDb();
-  return tool.handler({ db, input: input ?? {}, agentId: ctx.agentId });
+  return tool.handler({ db, input: input ?? {}, agentId: ctx.agentId, userId: ctx.userId });
 }

@@ -18,7 +18,7 @@ function makeFakeDb({ workstreams = [], tasks = [], agents = [] } = {}) {
     }),
   });
   // Simple fake — returns all rows for any select. Filters happen on the JS side anyway.
-  return {
+  const self = {
     select: () => ({
       from: (t) => {
         const tName = t?.[Symbol.for('drizzle:Name')] || t?.name || '';
@@ -39,7 +39,10 @@ function makeFakeDb({ workstreams = [], tasks = [], agents = [] } = {}) {
         });
       },
     }),
+    transaction: async (fn) => fn(self),
+    execute: async () => ({ rows: [] }),
   };
+  return self;
 }
 
 describe('mcpTools registry', () => {
@@ -74,7 +77,7 @@ describe('list_workstreams tool', () => {
     const fake = makeFakeDb({
       workstreams: [{ id: 'legal-ai', label: 'Legal AI', color: '#8B0000', icon: '⚖️' }],
     });
-    const out = await runTool('list_workstreams', {}, { db: fake });
+    const out = await runTool('list_workstreams', {}, { db: fake, userId: 'test-user' });
     expect(out).toEqual([{ id: 'legal-ai', label: 'Legal AI', color: '#8B0000', icon: '⚖️' }]);
   });
 });

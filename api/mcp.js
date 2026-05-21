@@ -57,7 +57,7 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'unauthorized', message: 'Invalid or missing bearer token.' });
   }
 
-  const server = buildServer({ agentId: auth.agentId, agentName: auth.agentName });
+  const server = buildServer({ agentId: auth.agentId, agentName: auth.agentName, userId: auth.userId });
   const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
   await server.connect(transport);
   await transport.handleRequest(req, res, req.body);
