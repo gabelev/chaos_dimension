@@ -29,4 +29,24 @@ describe('authenticateBearer', () => {
     const out = await authenticateBearer({ headers: { authorization: 'Bearer cd_legacy' } }, ctx);
     expect(out).toEqual({ agentId: 'a1', agentName: 'macbook' });
   });
+
+  it('returns userId from the agent-token path', async () => {
+    const ctx = {
+      db: {},
+      lookupAgentToken: vi.fn(async () => ({ agentId: 'a1', agentName: 'macbook', userId: 'user-1' })),
+      lookupOauthAccessToken: vi.fn(),
+    };
+    const out = await authenticateBearer({ headers: { authorization: 'Bearer cd_legacy' } }, ctx);
+    expect(out.userId).toBe('user-1');
+  });
+
+  it('returns userId from the OAuth-token path', async () => {
+    const ctx = {
+      db: {},
+      lookupAgentToken: vi.fn(),
+      lookupOauthAccessToken: vi.fn(async () => ({ clientId: 'c1', clientName: 'Claude Desktop', agentId: 'a1', userId: 'user-2' })),
+    };
+    const out = await authenticateBearer({ headers: { authorization: 'Bearer cd_oat_xyz' } }, ctx);
+    expect(out.userId).toBe('user-2');
+  });
 });

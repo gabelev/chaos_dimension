@@ -11,6 +11,7 @@ async function defaultLookupAgentToken(db, token) {
       tokenId: agentTokens.id,
       revoked: agentTokens.revoked,
       agentName: agents.name,
+      userId: agentTokens.userId,
     })
     .from(agentTokens)
     .innerJoin(agents, eq(agents.id, agentTokens.agentId))
@@ -18,7 +19,7 @@ async function defaultLookupAgentToken(db, token) {
     .limit(1);
   if (!rows.length) return null;
   db.update(agentTokens).set({ lastUsedAt: new Date() }).where(eq(agentTokens.id, rows[0].tokenId)).catch(() => {});
-  return { agentId: rows[0].agentId, agentName: rows[0].agentName };
+  return { agentId: rows[0].agentId, agentName: rows[0].agentName, userId: rows[0].userId };
 }
 
 async function defaultLookupOauthAccessToken(db, token) {
@@ -31,6 +32,7 @@ async function defaultLookupOauthAccessToken(db, token) {
       clientName: oauthClients.name,
       clientRowId: oauthClients.id,
       agentId: oauthClients.agentId,
+      userId: oauthClients.userId,
     })
     .from(oauthAccessTokens)
     .innerJoin(oauthClients, eq(oauthClients.clientId, oauthAccessTokens.clientId))
@@ -45,13 +47,13 @@ async function defaultLookupOauthAccessToken(db, token) {
   // Subsequent calls hit the warm agent_id on oauth_clients.
   let agentId = r.agentId;
   if (!agentId) {
-    const [created] = await db.insert(agents).values({ name: r.clientName, status: 'idle' }).returning();
+    const [created] = await db.insert(agents).values({ name: r.clientName, status: 'idle', userId: r.userId }).returning();
     agentId = created.id;
     await db.update(oauthClients).set({ agentId }).where(eq(oauthClients.id, r.clientRowId));
   }
 
   db.update(oauthAccessTokens).set({ lastUsedAt: new Date() }).where(eq(oauthAccessTokens.id, r.tokenId)).catch(() => {});
-  return { clientId: r.clientId, clientName: r.clientName, agentId };
+  return { clientId: r.clientId, clientName: r.clientName, agentId, userId: r.userId };
 }
 
 export async function authenticateBearer(req, ctx = {}) {
@@ -68,12 +70,14 @@ export async function authenticateBearer(req, ctx = {}) {
     const lookup = ctx.lookupOauthAccessToken ?? ((t) => defaultLookupOauthAccessToken(db, t));
     const hit = await lookup(token);
     if (!hit) return null;
-    return { agentId: hit.agentId, agentName: hit.clientName };
+    return { agentId: hit.agentId, agentName: hit.clientName, userId: hit.userId };
   }
 
   if (kind === 'agent') {
     const lookup = ctx.lookupAgentToken ?? ((t) => defaultLookupAgentToken(db, t));
-    return lookup(token);
+    const hit = await lookup(token);
+    if (!hit) return null;
+    return { agentId: hit.agentId, agentName: hit.agentName, userId: hit.userId };
   }
 
   return null;
