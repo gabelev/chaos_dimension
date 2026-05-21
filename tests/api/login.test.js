@@ -33,10 +33,30 @@ describe('POST /api/login handler', () => {
 
   it('returns 200 on correct password', async () => {
     process.env.CHAOS_PASSWORD_HASH = await hashPassword('correct');
+    process.env.CHAOS_OWNER_EMAIL = 'owner@example.com';
     const req = { method: 'POST', body: { password: 'correct' }, headers: {}, cookies: {} };
     const res = mockRes();
-    await handleLogin(req, res);
+    await handleLogin(req, res, {
+      lookupOwner: async (email) => ({ id: 'owner-cuid', email, name: 'Owner' }),
+    });
     expect(res.statusCode).toBe(200);
-    expect(res.body).toEqual({ ok: true });
+    expect(res.body).toEqual({ ok: true, userId: 'owner-cuid' });
+  });
+
+  it('sets userId in the session on successful login', async () => {
+    process.env.CHAOS_PASSWORD_HASH = await hashPassword('correct');
+    process.env.CHAOS_OWNER_EMAIL = 'owner@example.com';
+    const req = {
+      method: 'POST',
+      body: { password: 'correct' },
+      headers: {},
+      cookies: {},
+    };
+    const res = mockRes();
+    await handleLogin(req, res, {
+      lookupOwner: async (email) => ({ id: 'owner-cuid', email, name: 'Owner' }),
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.body.userId).toBe('owner-cuid');
   });
 });
