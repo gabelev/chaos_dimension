@@ -10,6 +10,7 @@ import AboutDialog from '../components/AboutDialog';
 import WorkstreamModal from '../components/WorkstreamModal';
 import { api } from '../lib/api';
 import { loadDemo, saveDemo, clearDemo, localId, slugify } from '../lib/demoStorage';
+import { useIsMobile } from '../lib/useIsMobile';
 import { useTheme, THEME_LIST } from '../themes';
 
 export default function App({ mode = 'live' }) {
@@ -203,10 +204,18 @@ export default function App({ mode = 'live' }) {
     done: tasks.filter(t => t.column === "done").length,
   };
   const runningAgents = agents.filter(a => a.status === "running").length;
+  const isMobile = useIsMobile();
 
   return (
     <div
-      style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden", cursor: "default", userSelect: "none" }}
+      style={{
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        cursor: "default",
+        userSelect: isMobile ? "auto" : "none",
+      }}
       onClick={() => setActiveMenu(null)}
     >
       <style>{GLOBAL_CSS}</style>
@@ -265,7 +274,10 @@ export default function App({ mode = 'live' }) {
 
       {/* ══════ DESKTOP ══════ */}
       <div style={{
-        flex: 1, position: "relative", overflow: "hidden",
+        flex: 1,
+        position: "relative",
+        overflow: isMobile ? "auto" : "hidden",
+        padding: isMobile ? 4 : 0,
         background: MAC.bg,
         backgroundImage: MAC.desktopBgImage,
         backgroundSize: MAC.desktopBgSize,
@@ -273,7 +285,12 @@ export default function App({ mode = 'live' }) {
       }}>
 
         {/* ══════ MAIN KANBAN WINDOW ══════ */}
-        <MacWindow title="Chaos Dimension — Tasks" x={4} y={4} w="calc(55% - 8px)" h="calc(100% - 8px)">
+        <MacWindow
+          title="Chaos Dimension — Tasks"
+          x={4} y={4} w="calc(55% - 8px)" h="calc(100% - 8px)"
+          stacked={isMobile}
+          minHeight={isMobile ? 520 : undefined}
+        >
           {/* Toolbar */}
           <div style={{
             padding: "6px 8px", background: MAC.chrome,
@@ -293,7 +310,13 @@ export default function App({ mode = 'live' }) {
           </div>
 
           {/* Kanban Columns */}
-          <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+          <div style={{
+            display: "flex",
+            flex: 1,
+            overflowX: isMobile ? "auto" : "hidden",
+            overflowY: "hidden",
+            WebkitOverflowScrolling: "touch",
+          }}>
             {COLUMNS.map(col => (
               <div
                 key={col}
@@ -306,7 +329,8 @@ export default function App({ mode = 'live' }) {
                   setDragState({ taskId: null, overCol: null });
                 }}
                 style={{
-                  flex: 1, borderRight: col !== "done" ? `1px solid ${MAC.chromeDark}` : "none",
+                  flex: isMobile ? `0 0 240px` : 1,
+                  borderRight: col !== "done" ? `1px solid ${MAC.chromeDark}` : "none",
                   display: "flex", flexDirection: "column", minWidth: 0,
                 }}
               >
@@ -340,7 +364,12 @@ export default function App({ mode = 'live' }) {
         </MacWindow>
 
         {/* ══════ AGENT MONITOR WINDOW ══════ */}
-        <MacWindow title="Agent Monitor" x="55%" y={4} w="calc(45% - 8px)" h="60%">
+        <MacWindow
+          title="Agent Monitor"
+          x="55%" y={4} w="calc(45% - 8px)" h="60%"
+          stacked={isMobile}
+          minHeight={isMobile ? 280 : undefined}
+        >
           <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
             {agents.map(agent => (
               <AgentCard
@@ -354,7 +383,12 @@ export default function App({ mode = 'live' }) {
         </MacWindow>
 
         {/* ══════ PROGRESS WINDOW ══════ */}
-        <MacWindow title="Workstream Progress" x="55%" y="calc(60% + 8px)" w="calc(45% - 8px)" h="calc(40% - 12px)">
+        <MacWindow
+          title="Workstream Progress"
+          x="55%" y="calc(60% + 8px)" w="calc(45% - 8px)" h="calc(40% - 12px)"
+          stacked={isMobile}
+          minHeight={isMobile ? 240 : undefined}
+        >
           <div style={{ padding: 10 }}>
             {Object.entries(workstreams).map(([key, ws]) => {
               const wt = tasks.filter(t => t.workstream === key);

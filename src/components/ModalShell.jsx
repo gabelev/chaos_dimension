@@ -15,7 +15,7 @@ export default function ModalShell({ title, children, width = 420, onClose, zInd
         style={{
           background: theme.chrome,
           border: theme.windowBorder,
-          width,
+          width: `min(${width}px, calc(100vw - 16px))`,
           maxHeight: '85vh',
           display: 'flex',
           flexDirection: 'column',

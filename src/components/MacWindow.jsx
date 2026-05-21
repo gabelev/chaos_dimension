@@ -1,10 +1,19 @@
 import { useTheme } from '../themes';
 
-export default function MacWindow({ title, children, x, y, w, h }) {
+export default function MacWindow({ title, children, x, y, w, h, stacked = false, minHeight }) {
   const { theme } = useTheme();
+  const positioning = stacked
+    ? {
+        position: "relative",
+        width: "100%",
+        height: "auto",
+        minHeight: minHeight ?? 360,
+        marginBottom: 8,
+      }
+    : { position: "absolute", left: x, top: y, width: w, height: h };
   return (
     <div style={{
-      position: "absolute", left: x, top: y, width: w, height: h,
+      ...positioning,
       display: "flex", flexDirection: "column",
       border: theme.windowBorder,
       boxShadow: theme.windowShadow || "2px 2px 0 rgba(0,0,0,0.3)",
