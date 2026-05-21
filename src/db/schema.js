@@ -6,6 +6,7 @@ export const workstreams = pgTable('workstreams', {
   label: text('label').notNull(),
   color: text('color').notNull(),
   icon: text('icon').notNull(),
+  userId: text('user_id'),
 });
 
 export const tasks = pgTable('tasks', {
@@ -19,6 +20,7 @@ export const tasks = pgTable('tasks', {
   notes: text('notes').notNull().default(''),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  userId: text('user_id'),
 });
 
 export const agents = pgTable('agents', {
@@ -30,6 +32,7 @@ export const agents = pgTable('agents', {
   log: jsonb('log').notNull().default([]),
   hostname: text('hostname'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
+  userId: text('user_id'),
 });
 
 export const agentTokens = pgTable('agent_tokens', {
@@ -40,6 +43,7 @@ export const agentTokens = pgTable('agent_tokens', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
   lastUsedAt: timestamp('last_used_at'),
   revoked: boolean('revoked').notNull().default(false),
+  userId: text('user_id'),
 });
 
 export const runs = pgTable('runs', {
@@ -51,6 +55,7 @@ export const runs = pgTable('runs', {
   status: text('status').notNull().default('running'),
   logUrl: text('log_url'),
   notes: text('notes').notNull().default(''),
+  userId: text('user_id'),
 });
 
 // OAuth tables: FK constraints intentionally omitted.
@@ -65,6 +70,7 @@ export const oauthClients = pgTable('oauth_clients', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
   lastUsedAt: timestamp('last_used_at'),
   agentId: text('agent_id'),
+  userId: text('user_id'),
 });
 
 export const oauthAuthCodes = pgTable('oauth_auth_codes', {
@@ -116,4 +122,13 @@ export const oauthRateLimits = pgTable('oauth_rate_limits', {
   bucket: text('bucket').notNull(),
   windowStart: timestamp('window_start').notNull(),
   count: integer('count').notNull().default(0),
+});
+
+export const users = pgTable('users', {
+  id: text('id').primaryKey().$defaultFn(() => createId()),
+  email: text('email').notNull().unique(),
+  name: text('name').notNull(),
+  passwordHash: text('password_hash'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
