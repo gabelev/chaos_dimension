@@ -3,7 +3,7 @@ import { handleDecision } from '../../api/oauth/authorize/decision.js';
 import { signPayload } from '../../src/lib/oauthCrypto.js';
 
 function memoryDb() {
-  const state = { codes: [], events: [] };
+  const state = { codes: [], events: [], clients: [] };
   return {
     state,
     insert: (table) => ({
@@ -15,6 +15,11 @@ function memoryDb() {
           else state.events.push(created);
           return [created];
         },
+      }),
+    }),
+    update: () => ({
+      set: () => ({
+        where: async () => {},
       }),
     }),
   };
@@ -61,5 +66,28 @@ describe('POST /api/oauth/authorize/decision', () => {
     expect(out.status).toBe(200);
     expect(out.body.redirect).toContain('error=access_denied');
     expect(out.body.redirect).toContain('state=st');
+  });
+
+  it('stamps oauth_clients.user_id on allow', async () => {
+    const db = memoryDb();
+    db.state.clients = [{ clientId: 'c1', userId: null }];
+    db.update = () => ({
+      set: (patch) => ({
+        where: async () => {
+          if ('userId' in patch && db.state.clients[0].userId === null) {
+            db.state.clients[0].userId = patch.userId;
+          }
+        },
+      }),
+    });
+    const csrf = signPayload({ req: goodReq }, sessionSecret, 60);
+    const out = await handleDecision({
+      session: { authed: true, userId: 'owner-cuid' },
+      body: { csrf, decision: 'allow' },
+      db,
+      sessionSecret,
+    });
+    expect(out.status).toBe(200);
+    expect(db.state.clients[0].userId).toBe('owner-cuid');
   });
 });

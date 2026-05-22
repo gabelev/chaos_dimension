@@ -1,5 +1,6 @@
+import { and, eq, isNull } from 'drizzle-orm';
 import { getDb } from '../../../src/db/client.js';
-import { oauthEvents } from '../../../src/db/schema.js';
+import { oauthClients, oauthEvents } from '../../../src/db/schema.js';
 import { issueAuthCode } from '../../../src/lib/oauthCodes.js';
 import { verifyPayload } from '../../../src/lib/oauthCrypto.js';
 import { getSession } from '../../../src/lib/requireAuth.js';
@@ -31,6 +32,13 @@ export async function handleDecision({ session, body, db, sessionSecret }) {
   });
 
   await db.insert(oauthEvents).values({ clientId: req.client_id, type: 'consent_allow', detail: {} }).returning();
+
+  // Consent is the linkage event: stamp the client's owner from the session.
+  // Idempotent via WHERE user_id IS NULL so re-consent never overwrites.
+  await db
+    .update(oauthClients)
+    .set({ userId: session.userId })
+    .where(and(eq(oauthClients.clientId, req.client_id), isNull(oauthClients.userId)));
 
   url.searchParams.set('code', code);
   url.searchParams.set('state', req.state);
