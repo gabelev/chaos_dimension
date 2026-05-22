@@ -4,7 +4,7 @@ dotenvConfig({ path: '.env.local' });
 
 import { sql } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
-import { getDb } from '../src/db/client.js';
+import { getMigrationDb } from '../src/db/client.js';
 
 const SCOPED_TABLES = ['tasks', 'workstreams', 'agents', 'agent_tokens', 'runs', 'oauth_clients'];
 
@@ -12,7 +12,8 @@ export async function runMigration() {
   const email = process.env.CHAOS_OWNER_EMAIL;
   if (!email) throw new Error('CHAOS_OWNER_EMAIL must be set');
 
-  const db = getDb();
+  // DDL (ALTER TABLE, CREATE POLICY) requires the owner role — cd_app can't.
+  const db = getMigrationDb();
   return db.transaction(async (tx) => {
     // 1. Insert owner if not present (idempotent via ON CONFLICT).
     const ownerId = createId();
