@@ -16,7 +16,7 @@ import { handleAuthorize } from '../../api/oauth/authorize.js';
 import { handlePending } from '../../api/oauth/authorize/pending.js';
 import { handleDecision } from '../../api/oauth/authorize/decision.js';
 import { handleToken } from '../../api/oauth/token.js';
-import { oauthClients } from '../../src/db/schema.js';
+import { oauthClients, users } from '../../src/db/schema.js';
 
 const SESSION_SECRET = 'x'.repeat(32);
 const REDIRECT = 'https://localhost:65000/cb';
@@ -24,8 +24,13 @@ const REDIRECT = 'https://localhost:65000/cb';
 function s256(s) { return createHash('sha256').update(s).digest('base64url'); }
 
 describeMaybe('oauth end-to-end (live DB)', () => {
-  let db;
-  beforeAll(() => { db = getDb(); });
+  let db, ownerId;
+  beforeAll(async () => {
+    db = getDb();
+    const rows = await db.select().from(users).where(eq(users.email, process.env.CHAOS_OWNER_EMAIL)).limit(1);
+    ownerId = rows[0]?.id;
+    if (!ownerId) throw new Error('owner row missing — run npm run db:migrate-multi-tenant');
+  });
 
   it('completes the full flow and authenticates an MCP request', async () => {
     // 1. Register
@@ -46,7 +51,7 @@ describeMaybe('oauth end-to-end (live DB)', () => {
     const challenge = s256(verifier);
     const az = await handleAuthorize({
       db,
-      session: { authed: true },
+      session: { authed: true, userId: ownerId },
       query: {
         client_id: clientId, redirect_uri: REDIRECT, response_type: 'code',
         code_challenge: challenge, code_challenge_method: 'S256', state: 'e2e', scope: 'mcp',
@@ -58,13 +63,13 @@ describeMaybe('oauth end-to-end (live DB)', () => {
     expect(reqToken).toBeTruthy();
 
     // 3. /authorize/pending -> CSRF
-    const pending = await handlePending({ session: { authed: true }, req: reqToken, sessionSecret: SESSION_SECRET });
+    const pending = await handlePending({ session: { authed: true, userId: ownerId }, req: reqToken, sessionSecret: SESSION_SECRET });
     expect(pending.status).toBe(200);
     expect(pending.body.client_name).toMatch(/^e2e-/);
 
     // 4. /authorize/decision allow -> redirect with code
     const decision = await handleDecision({
-      session: { authed: true },
+      session: { authed: true, userId: ownerId },
       body: { csrf: pending.body.csrf, decision: 'allow' },
       db,
       sessionSecret: SESSION_SECRET,
@@ -91,6 +96,7 @@ describeMaybe('oauth end-to-end (live DB)', () => {
     expect(who).not.toBeNull();
     expect(who.agentId).toBeTruthy();
     expect(who.agentName).toMatch(/^e2e-/);
+    expect(who.userId).toBe(ownerId);
 
     // Verify the client row now has the agent linked.
     const [clientRow] = await db.select().from(oauthClients).where(eq(oauthClients.clientId, clientId)).limit(1);
@@ -112,7 +118,7 @@ describeMaybe('oauth end-to-end (live DB)', () => {
     });
     expect(reused.status).toBe(400);
     expect(reused.body.error).toBe('invalid_grant');
-  });
+  }, 30000);
 
   it('rejects an authorization code with the wrong PKCE verifier', async () => {
     const reg = await handleRegister({
@@ -128,7 +134,7 @@ describeMaybe('oauth end-to-end (live DB)', () => {
     const verifier = randomBytes(32).toString('base64url');
     const challenge = s256(verifier);
     const az = await handleAuthorize({
-      db, session: { authed: true },
+      db, session: { authed: true, userId: ownerId },
       query: {
         client_id: clientId, redirect_uri: REDIRECT, response_type: 'code',
         code_challenge: challenge, code_challenge_method: 'S256', state: 'st', scope: 'mcp',
@@ -136,9 +142,9 @@ describeMaybe('oauth end-to-end (live DB)', () => {
       sessionSecret: SESSION_SECRET,
     });
     const reqToken = new URL('http://x' + az.location).searchParams.get('req');
-    const pending = await handlePending({ session: { authed: true }, req: reqToken, sessionSecret: SESSION_SECRET });
+    const pending = await handlePending({ session: { authed: true, userId: ownerId }, req: reqToken, sessionSecret: SESSION_SECRET });
     const decision = await handleDecision({
-      session: { authed: true }, body: { csrf: pending.body.csrf, decision: 'allow' }, db, sessionSecret: SESSION_SECRET,
+      session: { authed: true, userId: ownerId }, body: { csrf: pending.body.csrf, decision: 'allow' }, db, sessionSecret: SESSION_SECRET,
     });
     const code = new URL(decision.body.redirect).searchParams.get('code');
 
@@ -153,5 +159,5 @@ describeMaybe('oauth end-to-end (live DB)', () => {
     expect(bad.status).toBe(400);
     expect(bad.body.error).toBe('invalid_grant');
     expect(bad.body.reason).toBe('pkce');
-  });
+  }, 30000);
 });
