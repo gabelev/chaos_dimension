@@ -67,6 +67,8 @@ For a fuller local run including the serverless `/api/*` handlers, install the V
 
 ### Connect Claude Code via MCP
 
+> If you're signed into a hosted instance, the **Connect AI** menu in the dashboard walks you through this (and the Claude Desktop / ChatGPT cases below) with a live verify panel. The steps here are the canonical reference, used by self-hosters and anyone who'd rather copy-paste than click.
+
 Lets Claude Code (or any MCP client) read and write your tasks, claim work, and report progress from inside any coding session.
 
 1. **Mint an API token** from a clone of this repo:
@@ -92,6 +94,8 @@ Lets Claude Code (or any MCP client) read and write your tasks, claim work, and 
 4. **(Optional) Enable auto-tracking.** Paste the snippet from `docs/integration/CLAUDE.md.snippet` into a project's `CLAUDE.md` or your global `~/.claude/CLAUDE.md`. Claude will ask before creating tasks for non-trivial work and report progress as it goes.
 
 ### Connect Claude Desktop or claude.ai (web) via OAuth
+
+> Same note as above — signed-in users can use the dashboard's **Connect AI** menu for a guided walk-through with verify-when-it-connects polling.
 
 The MCP server speaks OAuth 2.1 with Dynamic Client Registration, so the connector dialog can self-register without any token wrangling.
 

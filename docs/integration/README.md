@@ -1,5 +1,7 @@
 # Chaos Dimension MCP — Setup
 
+> **Signed in to a hosted instance?** The dashboard's **Connect AI** menu walks you through Claude Code, Claude Desktop / claude.ai, and ChatGPT setup interactively — including a live verify panel that flips green when the client actually connects. This document is the canonical reference; the menu is the easy mode.
+
 Connect Claude Code (or any MCP client) to your Chaos Dimension deployment.
 
 ## One-time per machine
