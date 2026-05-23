@@ -34,7 +34,14 @@ function migrationUrl() {
     if (!t) throw new Error('VITEST is set but TEST_DATABASE_URL_MIGRATIONS is not — refusing to run migration tests against a non-test database');
     return t;
   }
-  const url = process.env.DATABASE_URL_MIGRATIONS || process.env.DATABASE_URL;
+  // Local dev scripts (mint-invite, migrate-multi-tenant, list-waitlist, etc.)
+  // prefer the test branch by default so a routine `npm run …` can't touch
+  // prod. To target prod explicitly, unset TEST_DATABASE_URL_MIGRATIONS for
+  // that command, e.g.:
+  //   TEST_DATABASE_URL_MIGRATIONS= npm run mint-invite -- --note "real"
+  const url = process.env.TEST_DATABASE_URL_MIGRATIONS
+    || process.env.DATABASE_URL_MIGRATIONS
+    || process.env.DATABASE_URL;
   if (!url) throw new Error('DATABASE_URL_MIGRATIONS / DATABASE_URL not set');
   return url;
 }
