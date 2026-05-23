@@ -2,6 +2,7 @@
   "name": "chaos-dimension",
   "version": "0.2.0",
   "description": "Retro Mac OS mission control for managing projects and AI agent orchestration",
+  "license": "AGPL-3.0-only",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,6 +14,7 @@
     "db:push": "drizzle-kit push",
     "db:seed": "node scripts/seed-workstreams.js",
     "db:migrate-multi-tenant": "node scripts/migrate-multi-tenant.js",
+    "db:verify-rls": "node scripts/verify-rls.js",
     "hash-password": "node scripts/hash-password.js",
     "mint-api-key": "node scripts/mint-api-key.js",
     "mint-invite": "node scripts/mint-invite.js",

@@ -1,3 +1,12 @@
+// Copyright (C) 2026 Gabe Levine
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, version 3.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
 import { useState, useEffect, useCallback } from 'react';
 import { WORKSTREAMS as SEED_WORKSTREAMS, COLUMNS, COL_LABELS } from '../data/workstreams';
 import { SEED_TASKS, SEED_AGENTS } from '../data/seed';
@@ -226,9 +235,20 @@ export default function App({ mode = 'live' }) {
           {activeMenu === "apple" && (
             <MenuDropdown items={[
               { label: "About Chaos Dimension...", action: () => { setShowAbout(true); setActiveMenu(null); } },
+              // AGPL §13 source-disclosure: every signed-in user sees a link
+              // to the source of the running software.
+              { label: "View source on GitHub", action: () => { window.open('https://github.com/gabelev/chaos_dimension', '_blank', 'noopener'); setActiveMenu(null); } },
               { divider: true },
               { label: `Tasks: ${stats.total}   Active: ${stats.active}   Done: ${stats.done}`, disabled: true },
               { label: `Agents: ${runningAgents} running`, disabled: true },
+              ...(isDemo ? [] : [
+                { divider: true },
+                { label: "Sign out", action: async () => {
+                  setActiveMenu(null);
+                  try { await api.logout(); } catch { /* still navigate to /login */ }
+                  window.location.href = '/login';
+                } },
+              ]),
             ]} />
           )}
         </MenuBarItem>
@@ -237,8 +257,14 @@ export default function App({ mode = 'live' }) {
             <MenuDropdown items={[
               { label: "New Task", shortcut: "⌘N", action: () => { setShowAddTask(true); setActiveMenu(null); } },
               { label: "Manage Workstreams...", action: () => { setShowWorkstreams(true); setActiveMenu(null); } },
-              { divider: true },
-              { label: "Reset All Data...", action: () => { resetData(); setActiveMenu(null); } },
+              // "Reset All Data..." only makes sense in the demo (it clears
+              // localStorage). In live mode it never touched the DB and just
+              // flashed the demo seed onto the user's board until the next
+              // poll — misleading UX, hide it.
+              ...(isDemo ? [
+                { divider: true },
+                { label: "Reset All Data...", action: () => { resetData(); setActiveMenu(null); } },
+              ] : []),
             ]} />
           )}
         </MenuBarItem>

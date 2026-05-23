@@ -1,13 +1,23 @@
+// Copyright (C) 2026 Gabe Levine
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, version 3.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTheme } from '../themes';
 import { api } from '../lib/api';
 
 export default function Signup() {
   const { theme } = useTheme();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [inviteCode, setInviteCode] = useState('');
+  const [inviteCode, setInviteCode] = useState(searchParams.get('invite') ?? '');
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
   const nav = useNavigate();
@@ -108,6 +118,11 @@ export default function Signup() {
             <button type="submit" disabled={busy} className="mac-btn mac-btn-primary">
               {busy ? 'Creating...' : 'Sign up'}
             </button>
+          </div>
+          <div style={{ marginTop: 12, textAlign: 'center', fontSize: 10, color: theme.textDim }}>
+            <a href="https://github.com/gabelev/chaos_dimension" target="_blank" rel="noreferrer noopener" style={theme.link}>
+              View source (AGPL-3.0)
+            </a>
           </div>
         </form>
       </div>

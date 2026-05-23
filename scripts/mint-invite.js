@@ -1,3 +1,12 @@
+// Copyright (C) 2026 Gabe Levine
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, version 3.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
 import 'dotenv/config';
 import { config as dotenvConfig } from 'dotenv';
 dotenvConfig({ path: '.env.local' });
@@ -46,14 +55,19 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const args = parseArgs(process.argv.slice(2));
   mintInvite(args)
     .then(({ code, note }) => {
+      const baseUrl =
+        process.env.PUBLIC_SITE_URL?.replace(/\/$/, '') ||
+        'https://www.chaosdimension.fyi';
+      const link = `${baseUrl}/signup?invite=${encodeURIComponent(code)}`;
       // Single source of truth — token shown once.
       console.log('');
       console.log('Invite code minted:');
       console.log('');
-      console.log(`  ${code}`);
+      console.log(`  code: ${code}`);
+      console.log(`  link: ${link}`);
       console.log('');
       if (note) console.log(`  note: ${note}`);
-      console.log('  share this with the recipient; they enter it at /signup');
+      console.log('  share the link (or code) with the recipient; the link pre-fills the form');
       console.log('');
       process.exit(0);
     })

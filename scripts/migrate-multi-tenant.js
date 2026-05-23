@@ -1,3 +1,12 @@
+// Copyright (C) 2026 Gabe Levine
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, version 3.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
 import 'dotenv/config';
 import { config as dotenvConfig } from 'dotenv';
 dotenvConfig({ path: '.env.local' });
@@ -5,6 +14,7 @@ dotenvConfig({ path: '.env.local' });
 import { sql } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 import { getMigrationDb } from '../src/db/client.js';
+import { assertRlsState } from '../src/lib/rlsCheck.js';
 
 // Tables that get NOT NULL user_id + FK + RLS isolation.
 const RLS_TABLES = ['tasks', 'workstreams', 'agents', 'runs'];
@@ -183,6 +193,13 @@ export async function runMigration() {
         END $$;
       `));
     }
+
+    // 6. Post-flight assertion. If any of the four scoped tables is missing
+    //    RLS enable / force / policy, throw — rolls back the whole tx so the
+    //    operator sees a loud failure instead of an apparently-successful
+    //    "migration complete" that left the data leaking. The 2026-05-23
+    //    incident slipped past because step 5 was assumed to have worked.
+    await assertRlsState(tx);
 
     return { ownerId: owner };
   });

@@ -1,12 +1,25 @@
+// Copyright (C) 2026 Gabe Levine
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, version 3.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import App from './App';
 import { useTheme } from '../themes';
 import WaitlistForm from '../components/WaitlistForm';
+import LandingIntroDialog from '../components/LandingIntroDialog';
 
 export default function Landing() {
   const { theme } = useTheme();
+  const [introOpen, setIntroOpen] = useState(true);
   return (
     <div style={{ position: 'relative' }}>
+      {introOpen && <LandingIntroDialog onClose={() => setIntroOpen(false)} />}
       <div
         style={{
           position: 'fixed',
@@ -68,7 +81,7 @@ export default function Landing() {
             → About this project
           </Link>
           <Link to="/login" style={theme.link}>
-            → Owner login
+            → Login
           </Link>
         </div>
       </div>
