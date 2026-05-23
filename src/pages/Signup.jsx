@@ -8,15 +8,16 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Affero General Public License for more details.
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTheme } from '../themes';
 import { api } from '../lib/api';
 
 export default function Signup() {
   const { theme } = useTheme();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [inviteCode, setInviteCode] = useState('');
+  const [inviteCode, setInviteCode] = useState(searchParams.get('invite') ?? '');
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
   const nav = useNavigate();

@@ -7,15 +7,19 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Affero General Public License for more details.
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import App from './App';
 import { useTheme } from '../themes';
 import WaitlistForm from '../components/WaitlistForm';
+import LandingIntroDialog from '../components/LandingIntroDialog';
 
 export default function Landing() {
   const { theme } = useTheme();
+  const [introOpen, setIntroOpen] = useState(true);
   return (
     <div style={{ position: 'relative' }}>
+      {introOpen && <LandingIntroDialog onClose={() => setIntroOpen(false)} />}
       <div
         style={{
           position: 'fixed',

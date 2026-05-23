@@ -55,14 +55,19 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const args = parseArgs(process.argv.slice(2));
   mintInvite(args)
     .then(({ code, note }) => {
+      const baseUrl =
+        process.env.PUBLIC_SITE_URL?.replace(/\/$/, '') ||
+        'https://www.chaosdimension.fyi';
+      const link = `${baseUrl}/signup?invite=${encodeURIComponent(code)}`;
       // Single source of truth — token shown once.
       console.log('');
       console.log('Invite code minted:');
       console.log('');
-      console.log(`  ${code}`);
+      console.log(`  code: ${code}`);
+      console.log(`  link: ${link}`);
       console.log('');
       if (note) console.log(`  note: ${note}`);
-      console.log('  share this with the recipient; they enter it at /signup');
+      console.log('  share the link (or code) with the recipient; the link pre-fills the form');
       console.log('');
       process.exit(0);
     })

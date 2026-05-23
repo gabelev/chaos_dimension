@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__chaos-dimension__list_workstreams",
+      "mcp__chaos-dimension__create_task",
+      "mcp__chaos-dimension__claim_task"
+    ]
+  }
+}
