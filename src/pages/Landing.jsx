@@ -68,7 +68,7 @@ export default function Landing() {
             → About this project
           </Link>
           <Link to="/login" style={theme.link}>
-            → Owner login
+            → Login
           </Link>
         </div>
       </div>

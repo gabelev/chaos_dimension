@@ -229,6 +229,14 @@ export default function App({ mode = 'live' }) {
               { divider: true },
               { label: `Tasks: ${stats.total}   Active: ${stats.active}   Done: ${stats.done}`, disabled: true },
               { label: `Agents: ${runningAgents} running`, disabled: true },
+              ...(isDemo ? [] : [
+                { divider: true },
+                { label: "Sign out", action: async () => {
+                  setActiveMenu(null);
+                  try { await api.logout(); } catch { /* still navigate to /login */ }
+                  window.location.href = '/login';
+                } },
+              ]),
             ]} />
           )}
         </MenuBarItem>
