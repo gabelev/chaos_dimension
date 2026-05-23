@@ -147,3 +147,18 @@ export const inviteCodes = pgTable('invite_codes', {
   note: text('note').notNull().default(''),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
+
+// Public waitlist (POST /api/waitlist). Not RLS-scoped — administrative
+// resource. Email uniqueness for pending entries is enforced via a
+// partial unique index installed by the migration script (UNIQUE on
+// email WHERE invited = false), so a duplicate POST is harmless.
+export const waitlist = pgTable('waitlist', {
+  id: text('id').primaryKey().$defaultFn(() => createId()),
+  email: text('email').notNull(),
+  name: text('name'),
+  note: text('note'),
+  source: text('source'),
+  invited: boolean('invited').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  invitedAt: timestamp('invited_at'),
+});

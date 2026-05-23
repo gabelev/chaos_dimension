@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import App from './App';
 import { useTheme } from '../themes';
+import WaitlistForm from '../components/WaitlistForm';
 
 export default function Landing() {
   const { theme } = useTheme();
@@ -70,6 +71,19 @@ export default function Landing() {
             → Owner login
           </Link>
         </div>
+      </div>
+      <div
+        style={{
+          position: 'fixed',
+          bottom: 16,
+          right: 8,
+          zIndex: 9999,
+          width: 280,
+          boxShadow: theme.windowShadow || '3px 3px 0 rgba(0,0,0,0.3)',
+          fontFamily: theme.FONT,
+        }}
+      >
+        <WaitlistForm />
       </div>
       <App mode="demo" />
     </div>
