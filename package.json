@@ -2,6 +2,7 @@
   "name": "chaos-dimension",
   "version": "0.2.0",
   "description": "Retro Mac OS mission control for managing projects and AI agent orchestration",
+  "license": "AGPL-3.0-only",
   "type": "module",
   "scripts": {
     "dev": "vite",

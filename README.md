@@ -156,4 +156,4 @@ Contributions are welcome. This is a small project with one maintainer, so pleas
 
 ## License
 
-MIT
+[AGPL-3.0-only](LICENSE). If you run a modified version of this software as a network service, you must make the source of your modified version available to users of that service (AGPL §13). The canonical source is at [github.com/gabelev/chaos_dimension](https://github.com/gabelev/chaos_dimension); the hosted instance at [chaosdimension.fyi](https://chaosdimension.fyi) runs this repo unmodified.
