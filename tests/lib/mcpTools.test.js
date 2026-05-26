@@ -70,6 +70,9 @@ describe('mcpTools registry', () => {
     expect(names).toEqual(
       expect.arrayContaining([
         'list_workstreams',
+        'create_workstream',
+        'update_workstream',
+        'delete_workstream',
         'list_tasks',
         'get_task',
         'create_task',
@@ -78,7 +81,7 @@ describe('mcpTools registry', () => {
         'report_progress',
       ])
     );
-    expect(names).toHaveLength(7);
+    expect(names).toHaveLength(10);
   });
 
   it('every tool has name, description, inputSchema, handler', () => {

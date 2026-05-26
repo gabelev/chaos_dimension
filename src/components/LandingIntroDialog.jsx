@@ -17,9 +17,12 @@ const MCP_TOOLS = [
   'create_task',
   'update_task',
   'claim_task',
-  'list_workstreams',
-  'report_progress',
   'get_task',
+  'report_progress',
+  'list_workstreams',
+  'create_workstream',
+  'update_workstream',
+  'delete_workstream',
 ];
 
 const FEATURES = [

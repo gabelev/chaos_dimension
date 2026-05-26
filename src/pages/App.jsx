@@ -7,7 +7,7 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Affero General Public License for more details.
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { WORKSTREAMS as SEED_WORKSTREAMS, COLUMNS, COL_LABELS } from '../data/workstreams';
 import { SEED_TASKS, SEED_AGENTS } from '../data/seed';
 import MacWindow from '../components/MacWindow';
@@ -215,6 +215,52 @@ export default function App({ mode = 'live' }) {
   const runningAgents = agents.filter(a => a.status === "running").length;
   const isMobile = useIsMobile();
 
+  const SPLIT_KEY = 'cd.splitPct';
+  const SPLIT_MIN = 25;
+  const SPLIT_MAX = 80;
+  const clampSplit = (n) => Math.min(SPLIT_MAX, Math.max(SPLIT_MIN, n));
+  const [splitPct, setSplitPct] = useState(() => {
+    if (typeof window === 'undefined') return 55;
+    const raw = window.localStorage.getItem(SPLIT_KEY);
+    const n = raw ? parseFloat(raw) : NaN;
+    return Number.isFinite(n) ? clampSplit(n) : 55;
+  });
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(SPLIT_KEY, String(splitPct));
+    }
+  }, [splitPct]);
+
+  const desktopRef = useRef(null);
+  const draggingRef = useRef(false);
+
+  useEffect(() => {
+    if (isMobile) return;
+    const onMove = (e) => {
+      if (!draggingRef.current || !desktopRef.current) return;
+      const rect = desktopRef.current.getBoundingClientRect();
+      const pct = ((e.clientX - rect.left) / rect.width) * 100;
+      setSplitPct(clampSplit(pct));
+    };
+    const onUp = () => {
+      if (!draggingRef.current) return;
+      draggingRef.current = false;
+      document.body.style.cursor = '';
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, [isMobile]);
+
+  const startDragSplit = (e) => {
+    e.preventDefault();
+    draggingRef.current = true;
+    document.body.style.cursor = 'col-resize';
+  };
+
   return (
     <div
       style={{
@@ -306,7 +352,7 @@ export default function App({ mode = 'live' }) {
       </MenuBar>
 
       {/* ══════ DESKTOP ══════ */}
-      <div style={{
+      <div ref={desktopRef} style={{
         flex: 1,
         position: "relative",
         overflow: isMobile ? "auto" : "hidden",
@@ -320,7 +366,7 @@ export default function App({ mode = 'live' }) {
         {/* ══════ MAIN KANBAN WINDOW ══════ */}
         <MacWindow
           title="Chaos Dimension — Tasks"
-          x={4} y={4} w="calc(55% - 8px)" h="calc(100% - 8px)"
+          x={4} y={4} w={`calc(${splitPct}% - 8px)`} h="calc(100% - 8px)"
           stacked={isMobile}
           minHeight={isMobile ? 520 : undefined}
         >
@@ -396,10 +442,28 @@ export default function App({ mode = 'live' }) {
           </div>
         </MacWindow>
 
+        {/* ══════ VERTICAL SPLITTER ══════ */}
+        {!isMobile && (
+          <div
+            onMouseDown={startDragSplit}
+            title="Drag to resize"
+            style={{
+              position: "absolute",
+              left: `calc(${splitPct}% - 3px)`,
+              top: 4,
+              width: 6,
+              height: "calc(100% - 8px)",
+              cursor: "col-resize",
+              zIndex: 50,
+              background: "transparent",
+            }}
+          />
+        )}
+
         {/* ══════ AGENT MONITOR WINDOW ══════ */}
         <MacWindow
           title="Agent Monitor"
-          x="55%" y={4} w="calc(45% - 8px)" h="60%"
+          x={`${splitPct}%`} y={4} w={`calc(${100 - splitPct}% - 8px)`} h="60%"
           stacked={isMobile}
           minHeight={isMobile ? 280 : undefined}
         >
@@ -418,7 +482,7 @@ export default function App({ mode = 'live' }) {
         {/* ══════ PROGRESS WINDOW ══════ */}
         <MacWindow
           title="Workstream Progress"
-          x="55%" y="calc(60% + 8px)" w="calc(45% - 8px)" h="calc(40% - 12px)"
+          x={`${splitPct}%`} y="calc(60% + 8px)" w={`calc(${100 - splitPct}% - 8px)`} h="calc(40% - 12px)"
           stacked={isMobile}
           minHeight={isMobile ? 240 : undefined}
         >
