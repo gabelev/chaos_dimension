@@ -223,6 +223,7 @@ const TOOL_DEFS = [
             notes: input.notes ?? '',
             agentDispatchable: input.agentDispatchable ?? false,
             remoteRunnable: input.remoteRunnable ?? false,
+            createdVia: 'mcp',
             userId,
           })
           .returning();

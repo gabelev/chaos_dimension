@@ -149,6 +149,23 @@ describe('workstream slug resolution', () => {
     expect(inserted.workstream).toBe(ws.id);
   });
 
+  it('create_task stamps createdVia="mcp" on the inserted row', async () => {
+    let inserted;
+    const fake = makeFakeDb({ workstreams: [ws] });
+    fake.insert = () => ({
+      values: (v) => {
+        inserted = v;
+        return { returning: async () => [{ id: 'task-1', ...v }] };
+      },
+    });
+    await runTool(
+      'create_task',
+      { title: 'New task', workstream: ws.id },
+      { db: fake, userId: 'test-user' },
+    );
+    expect(inserted.createdVia).toBe('mcp');
+  });
+
   it('create_task throws on an unknown workstream', async () => {
     const fake = makeFakeDb({ workstreams: [ws] });
     await expect(
