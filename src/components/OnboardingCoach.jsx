@@ -7,11 +7,12 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Affero General Public License for more details.
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTheme } from '../themes';
 import { api } from '../lib/api';
 
 const POLL_MS = 10_000;
+const CELEBRATE_MS = 3000;
 const COACH_W = 280;
 const COACH_H = 210;
 const MARGIN = 16;
@@ -25,8 +26,6 @@ export default function OnboardingCoach({ open, onClose }) {
     x: typeof window !== 'undefined' ? window.innerWidth - COACH_W - MARGIN : MARGIN,
     y: typeof window !== 'undefined' ? window.innerHeight - COACH_H - MARGIN : MARGIN,
   }));
-  const dragRef = useRef(null);
-
   // Poll while open.
   useEffect(() => {
     if (!open) return;
@@ -44,18 +43,23 @@ export default function OnboardingCoach({ open, onClose }) {
     return () => { cancelled = true; clearTimeout(timer); };
   }, [open]);
 
-  // Both checked → celebrate ~3s → auto-close + persist dismissal.
+  // Watch state to decide when to celebrate.
   useEffect(() => {
     if (!state) return;
-    if (state.has_connected_ai && state.has_mcp_created_task && !celebrate) {
+    if (state.has_connected_ai && state.has_mcp_created_task) {
       setCelebrate(true);
-      const t = setTimeout(async () => {
-        try { await api.dismissOnboarding(); } catch { /* ignore */ }
-        onClose();
-      }, 3000);
-      return () => clearTimeout(t);
     }
-  }, [state, celebrate, onClose]);
+  }, [state]);
+
+  // Once celebrating, schedule the auto-close exactly once.
+  useEffect(() => {
+    if (!celebrate) return;
+    const t = setTimeout(async () => {
+      try { await api.dismissOnboarding(); } catch { /* ignore */ }
+      onClose();
+    }, CELEBRATE_MS);
+    return () => clearTimeout(t);
+  }, [celebrate, onClose]);
 
   // Drag from title bar.
   const onMouseDownTitle = (e) => {
@@ -88,7 +92,6 @@ export default function OnboardingCoach({ open, onClose }) {
 
   return (
     <div
-      ref={dragRef}
       style={{
         position: 'fixed',
         left: pos.x,
@@ -198,9 +201,21 @@ export default function OnboardingCoach({ open, onClose }) {
           textAlign: 'right',
           flexShrink: 0,
         }}>
-          <span onClick={dismissForever} style={{ cursor: 'pointer', textDecoration: 'underline' }}>
+          <button
+            type="button"
+            onClick={dismissForever}
+            style={{
+              cursor: 'pointer',
+              textDecoration: 'underline',
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              font: 'inherit',
+              color: 'inherit',
+            }}
+          >
             Don't show again
-          </span>
+          </button>
         </div>
       )}
     </div>
