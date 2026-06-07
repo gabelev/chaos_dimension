@@ -59,7 +59,7 @@ export default function WaitlistForm() {
       fontFamily: theme.FONT,
       borderRadius: theme.window?.borderRadius || 0,
     }}>
-      <div style={{ fontWeight: 'bold', marginBottom: 8 }}>Join the waitlist</div>
+      <div style={{ fontWeight: 'bold', marginBottom: 8 }}>Request access</div>
       <div style={{ fontSize: 12, color: theme.textDim, marginBottom: 12 }}>
         Tell us a bit about what you'd use it for — we send invites in small batches.
       </div>
