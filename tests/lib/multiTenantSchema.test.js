@@ -18,6 +18,9 @@ import {
 } from '../../src/db/schema.js';
 import { getMigrationDb } from '../../src/db/client.js';
 
+const SKIP = !process.env.DATABASE_URL;
+const describeMaybe = SKIP ? describe.skip : describe;
+
 describe('multi-tenant schema additions', () => {
   it('exports a users table', () => {
     expect(users).toBeDefined();
@@ -30,6 +33,9 @@ describe('multi-tenant schema additions', () => {
     expect(runs.userId).toBeDefined();
     expect(oauthClients.userId).toBeDefined();
   });
+});
+
+describeMaybe('multi-tenant schema additions (live DB)', () => {
   it('tasks has a created_via column defaulting to ui', async () => {
     const db = getMigrationDb();
     const result = await db.execute(sql`
