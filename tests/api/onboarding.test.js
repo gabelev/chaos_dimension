@@ -42,18 +42,22 @@ function makeRes() {
 describeMaybe('GET/POST /api/me/onboarding', () => {
   let userId;
   let otherUserId;
+  let bystanderId;
 
   beforeAll(async () => {
     const db = getDb();
     userId = createId();
     otherUserId = createId();
+    bystanderId = createId();
     await db.insert(users).values([
       { id: userId, email: `onboard-${userId}@test`, name: 'Coach User', passwordHash: null },
       { id: otherUserId, email: `onboard-${otherUserId}@test`, name: 'Other', passwordHash: null },
+      { id: bystanderId, email: `onboard-${bystanderId}@test`, name: 'Bystander', passwordHash: null },
     ]);
   });
 
   afterAll(async () => {
+    if (!userId || !otherUserId || !bystanderId) return;
     const db = getDb();
     await db.delete(tasks).where(eq(tasks.userId, userId));
     await db.delete(oauthClients).where(eq(oauthClients.userId, userId));
@@ -61,6 +65,7 @@ describeMaybe('GET/POST /api/me/onboarding', () => {
     await db.delete(agents).where(eq(agents.userId, userId));
     await db.delete(users).where(eq(users.id, userId));
     await db.delete(users).where(eq(users.id, otherUserId));
+    await db.delete(users).where(eq(users.id, bystanderId));
   });
 
   it('returns all-false for a fresh user', async () => {
@@ -106,18 +111,14 @@ describeMaybe('GET/POST /api/me/onboarding', () => {
   });
 
   it('does not count tasks created by another user', async () => {
-    const db = getDb();
-    await db.insert(tasks).values({
-      title: 'other-user-mcp',
-      workstream: 'second-seat',
-      column: 'backlog',
-      createdVia: 'mcp',
-      userId: otherUserId,
-    });
-    const req = makeReq({ method: 'GET', session: { authed: true, userId } });
+    // The primary user already has an mcp task from the previous test.
+    // The bystander has zero mcp tasks of their own — querying as the
+    // bystander should not see anyone else's mcp tasks leak in.
+    const req = makeReq({ method: 'GET', session: { authed: true, userId: bystanderId } });
     const res = makeRes();
     await handler(req, res);
-    expect(res.body.has_mcp_created_task).toBe(true);
+    expect(res.body.has_mcp_created_task).toBe(false);
+    expect(res.body.has_connected_ai).toBe(false);
   });
 
   it('dismiss flips coach_dismissed=true', async () => {
