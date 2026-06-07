@@ -28,6 +28,7 @@ export const tasks = pgTable('tasks', {
   remoteRunnable: boolean('remote_runnable').notNull().default(false),
   priority: text('priority').notNull().default('med'),
   notes: text('notes').notNull().default(''),
+  createdVia: text('created_via').notNull().default('ui'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
   userId: text('user_id'),
@@ -141,6 +142,7 @@ export const users = pgTable('users', {
   passwordHash: text('password_hash'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  coachDismissed: boolean('coach_dismissed').notNull().default(false),
 });
 
 // Invite codes for Phase 2 signup. Not RLS-scoped — administrative
