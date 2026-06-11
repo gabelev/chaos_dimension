@@ -146,6 +146,7 @@ React 18 + Vite frontend. Vercel serverless functions for `/api/*`. Neon Postgre
 - [ ] AIM Messenger-style chat panel that routes to the Anthropic API
 - [ ] Settings → API Keys management UI (currently CLI-only)
 - [ ] Cloud orchestrator: ephemeral containers that run agent tasks while your laptop is closed
+- [~] Remote agent runtime: drive long-lived agents on a droplet/VPS/local box via [`claude-rc-server`](https://github.com/gabelev/claude-rc-server), reporting to the board over MCP (persistent servers today; ephemeral containers still TODO)
 - [ ] Worklog export for blog posts
 
 ## Contributing
