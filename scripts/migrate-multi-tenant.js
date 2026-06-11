@@ -236,12 +236,20 @@ export async function runMigration() {
       `));
     }
 
-    // 6. Post-flight assertion. If any of the four scoped tables is missing
-    //    RLS enable / force / policy, throw — rolls back the whole tx so the
-    //    operator sees a loud failure instead of an apparently-successful
-    //    "migration complete" that left the data leaking. The 2026-05-23
-    //    incident slipped past because step 5 was assumed to have worked.
-    await assertRlsState(tx);
+    // 6. Post-flight assertion. If any scoped table is missing RLS enable /
+    //    force / policy, throw — rolls back the whole tx so the operator sees a
+    //    loud failure instead of an apparently-successful "migration complete"
+    //    that left the data leaking. The 2026-05-23 incident slipped past
+    //    because step 5 was assumed to have worked.
+    //
+    //    checkRole:false — this tx runs as the table owner, which on Neon is a
+    //    BYPASSRLS superuser-family role (neondb_owner); the role-bypass check
+    //    only makes sense against the runtime cd_app connection. The schema
+    //    checks (RLS enabled/forced + policy present) read pg_catalog and are
+    //    role-independent, so they still give full rollback-on-drift safety.
+    //    Police the runtime role separately with `npm run db:verify-rls`
+    //    (it connects as cd_app).
+    await assertRlsState(tx, { checkRole: false });
 
     return { ownerId: owner };
   });

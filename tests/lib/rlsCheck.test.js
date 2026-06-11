@@ -108,4 +108,34 @@ describe('checkRlsState — synthetic failure modes (unit tests)', () => {
     });
     expect(await checkRlsState(db)).toEqual([]);
   });
+
+  it('checkRole:false skips the role-bypass check (the migration owner-connection path)', async () => {
+    // With checkRole:false the role query is not issued, so the first execute
+    // is the table-state query and the second is policies. A BYPASSRLS owner
+    // role must NOT be reported, but the schema checks still run.
+    let call = 0;
+    const db = {
+      execute: async () => {
+        call += 1;
+        return call === 1 ? { rows: healthyTables } : { rows: allPolicies };
+      },
+    };
+    const problems = await checkRlsState(db, { checkRole: false });
+    expect(problems).toEqual([]);
+    expect(problems.some((p) => /BYPASSRLS/.test(p))).toBe(false);
+  });
+
+  it('checkRole:false still flags missing schema state (RLS off)', async () => {
+    let call = 0;
+    const db = {
+      execute: async () => {
+        call += 1;
+        return call === 1
+          ? { rows: healthyTables.map((t) => ({ ...t, relrowsecurity: false })) }
+          : { rows: allPolicies };
+      },
+    };
+    const problems = await checkRlsState(db, { checkRole: false });
+    expect(problems.filter((p) => /row-level security is DISABLED/.test(p))).toHaveLength(RLS_REQUIRED_TABLES.length);
+  });
 });

@@ -73,16 +73,18 @@ export default function App({ mode = 'live' }) {
   useEffect(() => {
     if (isDemo) return;
 
+    // Each resource refreshes independently. A single failing call (e.g. a
+    // not-yet-migrated /api/specs returning 500) must never blank the rest of
+    // the board — so we do NOT bundle these into one Promise.all, where one
+    // rejection would drop every result. Each updates its own state or logs.
     const fetchAll = () => {
       if (typeof document !== 'undefined' && document.hidden) return;
-      Promise.all([api.listTasks(), api.listAgents(), api.listWorkstreams(), api.listSpecs()])
-        .then(([t, a, ws, sp]) => {
-          setTasks(t);
-          setAgents(a);
-          setWorkstreams(Object.fromEntries(ws.map(w => [w.id, { label: w.label, color: w.color, icon: w.icon }])));
-          setSpecs(sp);
-        })
-        .catch((err) => console.error('refresh failed', err));
+      api.listTasks().then(setTasks).catch((err) => console.error('tasks refresh failed', err));
+      api.listAgents().then(setAgents).catch((err) => console.error('agents refresh failed', err));
+      api.listWorkstreams()
+        .then((ws) => setWorkstreams(Object.fromEntries(ws.map(w => [w.id, { label: w.label, color: w.color, icon: w.icon }]))))
+        .catch((err) => console.error('workstreams refresh failed', err));
+      api.listSpecs().then(setSpecs).catch((err) => console.error('specs refresh failed', err));
     };
 
     fetchAll();
