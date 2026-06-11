@@ -297,8 +297,10 @@ export default function Admin() {
 
   if (state !== 'ok') return null;
 
+  // height:100vh (not minHeight) makes the outer div a real scroll container —
+  // the global body has overflow:hidden, so a min-height box would just clip.
   return (
-    <div style={{ ...theme.desktop, padding: 24, overflow: 'auto', minHeight: '100vh' }}>
+    <div style={{ ...theme.desktop, padding: 24, height: '100vh', overflow: 'auto' }}>
       <div style={{
         background: theme.chrome, border: theme.windowBorder, maxWidth: 820, margin: '0 auto',
         boxShadow: theme.windowShadow || '4px 4px 0 rgba(0,0,0,0.3)', color: theme.text,
