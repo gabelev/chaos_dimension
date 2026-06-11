@@ -13,7 +13,7 @@ dotenvConfig({ path: '.env.local' });
 
 import { describe, it, expect } from 'vitest';
 import { getDb } from '../../src/db/client.js';
-import { checkRlsState, assertRlsState } from '../../src/lib/rlsCheck.js';
+import { checkRlsState, assertRlsState, RLS_REQUIRED_TABLES } from '../../src/lib/rlsCheck.js';
 
 const SKIP = !process.env.DATABASE_URL;
 const describeMaybe = SKIP ? describe.skip : describe;
@@ -51,10 +51,12 @@ describe('checkRlsState — synthetic failure modes (unit tests)', () => {
     };
   }
 
-  const allPolicies = ['tasks', 'workstreams', 'agents', 'runs'].map((t) => ({
+  // Derived from the source-of-truth list so adding an RLS table doesn't
+  // silently desync these fixtures (it did for the specs tables).
+  const allPolicies = RLS_REQUIRED_TABLES.map((t) => ({
     tablename: t, policyname: `${t}_user_isolation`,
   }));
-  const healthyTables = ['tasks', 'workstreams', 'agents', 'runs'].map((t) => ({
+  const healthyTables = RLS_REQUIRED_TABLES.map((t) => ({
     relname: t, relrowsecurity: true, relforcerowsecurity: true,
   }));
 
@@ -75,7 +77,7 @@ describe('checkRlsState — synthetic failure modes (unit tests)', () => {
       policyRows: allPolicies,
     });
     const problems = await checkRlsState(db);
-    expect(problems.filter((p) => /row-level security is DISABLED/.test(p))).toHaveLength(4);
+    expect(problems.filter((p) => /row-level security is DISABLED/.test(p))).toHaveLength(RLS_REQUIRED_TABLES.length);
   });
 
   it('flags FORCE=false (owner-role bypass)', async () => {
@@ -85,7 +87,7 @@ describe('checkRlsState — synthetic failure modes (unit tests)', () => {
       policyRows: allPolicies,
     });
     const problems = await checkRlsState(db);
-    expect(problems.filter((p) => /FORCE row-level security is OFF/.test(p))).toHaveLength(4);
+    expect(problems.filter((p) => /FORCE row-level security is OFF/.test(p))).toHaveLength(RLS_REQUIRED_TABLES.length);
   });
 
   it('flags missing policies', async () => {
@@ -95,7 +97,7 @@ describe('checkRlsState — synthetic failure modes (unit tests)', () => {
       policyRows: [], // all policies dropped
     });
     const problems = await checkRlsState(db);
-    expect(problems.filter((p) => /missing RLS policy/.test(p))).toHaveLength(4);
+    expect(problems.filter((p) => /missing RLS policy/.test(p))).toHaveLength(RLS_REQUIRED_TABLES.length);
   });
 
   it('healthy state → empty problems', async () => {

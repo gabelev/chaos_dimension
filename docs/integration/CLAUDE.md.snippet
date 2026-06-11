@@ -7,8 +7,9 @@ When the user gives you a non-trivial coding instruction:
 1. Call `list_workstreams` and `list_tasks` to check whether the work is already tracked.
 2. If not, ask the user: "Want me to track this as a task in <inferred workstream>?"
 3. If they say yes, call `create_task` then `claim_task` with the new id.
-4. While working, call `report_progress` periodically with concise updates (≤ 80 chars).
-5. When done, call `update_task` with `column: 'review'` (or `'done'` if no review is needed).
+4. After claiming, call `get_task` and read its `specs` array — if a spec / requirements doc is attached to the task or inherited from its workstream, call `get_spec` to pull the full content before you start.
+5. While working, call `report_progress` periodically with concise updates (≤ 80 chars).
+6. When done, call `update_task` with `column: 'review'` (or `'done'` if no review is needed).
 
 Skip tracking for trivial edits (typos, one-line fixes, exploration).
 

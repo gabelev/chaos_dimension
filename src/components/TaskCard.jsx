@@ -9,7 +9,7 @@
 // GNU Affero General Public License for more details.
 import { useTheme } from '../themes';
 
-export default function TaskCard({ task, agents, workstreams, setDragState, onEdit, onDispatch }) {
+export default function TaskCard({ task, agents, workstreams, hasSpec, setDragState, onEdit, onDispatch }) {
   const { theme } = useTheme();
   const ws = workstreams?.[task.workstream] ?? { color: theme.textDim, label: task.workstream, icon: '•' };
   const agentAssigned = agents.find(a => a.taskId === task.id);
@@ -43,6 +43,7 @@ export default function TaskCard({ task, agents, workstreams, setDragState, onEd
           {ws.icon} {ws.label}
         </span>
         {task.agentDispatchable && <span title="Agent-dispatchable" style={{ fontSize: 11 }}>⚡</span>}
+        {hasSpec && <span title="Has a spec / requirements doc" style={{ fontSize: 10 }}>📄</span>}
         {agentAssigned && (
           <span style={{ fontSize: 10, color: theme.highlight }}>▸ {agentAssigned.name}</span>
         )}

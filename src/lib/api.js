@@ -50,6 +50,17 @@ export const api = {
   createWorkstream: (ws) => request('/api/workstreams', { method: 'POST', body: ws }),
   updateWorkstream: (id, updates) => request(`/api/workstreams/${id}`, { method: 'PATCH', body: updates }),
   deleteWorkstream: (id) => request(`/api/workstreams/${id}`, { method: 'DELETE' }),
+  // Spec / requirements docs. listSpecs() with no args returns metadata for all
+  // specs; pass { task } or { workstream } to filter. getSpec returns full content.
+  listSpecs: (filters = {}) => {
+    const qs = new URLSearchParams(filters).toString();
+    return request(`/api/specs${qs ? `?${qs}` : ''}`);
+  },
+  getSpec: (id) => request(`/api/specs/${id}`),
+  getSpecRevision: (id, version) => request(`/api/specs/${id}?version=${version}`),
+  createSpec: (spec) => request('/api/specs', { method: 'POST', body: spec }),
+  updateSpec: (id, updates) => request(`/api/specs/${id}`, { method: 'PATCH', body: updates }),
+  deleteSpec: (id) => request(`/api/specs/${id}`, { method: 'DELETE' }),
   // MCP credential management — used by the Connect AI walk-through.
   listMyTokens: () => request('/api/agent-tokens'),
   mintToken: (label) => request('/api/agent-tokens', { method: 'POST', body: { label } }),

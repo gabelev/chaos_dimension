@@ -89,7 +89,7 @@ Lets Claude Code (or any MCP client) read and write your tasks, claim work, and 
    ```
    /mcp
    ```
-   You should see `chaos-dimension` connected with 7 tools (`list_workstreams`, `list_tasks`, `get_task`, `create_task`, `update_task`, `claim_task`, `report_progress`).
+   You should see `chaos-dimension` connected. Tools cover workstreams (`list_workstreams`, `create_workstream`, `update_workstream`, `delete_workstream`), tasks (`list_tasks`, `get_task`, `create_task`, `update_task`, `claim_task`, `report_progress`), and spec / requirements docs (`create_spec`, `list_specs`, `get_spec`, `get_spec_revision`, `update_spec`, `delete_spec`).
 
 4. **(Optional) Enable auto-tracking.** Paste the snippet from `docs/integration/CLAUDE.md.snippet` into a project's `CLAUDE.md` or your global `~/.claude/CLAUDE.md`. Claude will ask before creating tasks for non-trivial work and report progress as it goes.
 
@@ -129,6 +129,7 @@ In short: Chaos Dimension coordinates *what* gets worked on and surfaces the sta
 - Password-gated private mode + optional public demo landing (interactive, localStorage-backed)
 - Owner admin page (`/admin`): mint/revoke invites, reset a user's password, and invite from the waitlist — all from the browser (the CLI scripts still work)
 - MCP server: connect Claude Code; tasks update from inside your coding sessions
+- Spec / requirements docs: attach a versioned markdown doc to a workstream or a task (dictate one to Claude, pull it back via MCP when an agent picks up the work)
 - Four themes (Classic Mac OS, Minimal, Terminal, Modern)
 - Live dashboard updates (polls every 10s when the tab is visible)
 

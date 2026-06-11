@@ -17,7 +17,7 @@ import { getMigrationDb } from '../src/db/client.js';
 import { assertRlsState } from '../src/lib/rlsCheck.js';
 
 // Tables that get NOT NULL user_id + FK + RLS isolation.
-const RLS_TABLES = ['tasks', 'workstreams', 'agents', 'runs'];
+const RLS_TABLES = ['tasks', 'workstreams', 'agents', 'runs', 'specs', 'spec_revisions'];
 
 // Local slugify — kept self-contained so this Node script has no frontend deps.
 function slugify(s) {
@@ -189,6 +189,48 @@ export async function runMigration() {
             CREATE POLICY ${table}_user_isolation ON ${table}
               USING (user_id = current_setting('app.current_user_id', true))
               WITH CHECK (user_id = current_setting('app.current_user_id', true));
+          END IF;
+        END $$;
+      `));
+    }
+
+    // 5b. Spec-specific integrity: FKs to the attachment targets + the
+    //     "exactly one target" CHECK. The generic loop above already added
+    //     specs_user_id_fk / spec_revisions_user_id_fk; these are the extra
+    //     domain FKs and the invariant constraint. All guarded → idempotent.
+    //     Skipped cleanly if the specs tables don't exist yet (db:push first).
+    const specTables = await tx.execute(sql.raw(
+      `SELECT relname FROM pg_class WHERE relname IN ('specs', 'spec_revisions')`
+    ));
+    const haveSpecs = new Set((specTables.rows ?? specTables).map((r) => r.relname));
+    if (haveSpecs.has('specs') && haveSpecs.has('spec_revisions')) {
+      const specFks = [
+        ['specs', 'specs_workstream_id_fk', 'workstream_id', 'workstreams', 'CASCADE'],
+        ['specs', 'specs_task_id_fk', 'task_id', 'tasks', 'CASCADE'],
+        ['spec_revisions', 'spec_revisions_spec_id_fk', 'spec_id', 'specs', 'CASCADE'],
+      ];
+      for (const [table, name, col, ref, onDelete] of specFks) {
+        await tx.execute(sql.raw(`
+          DO $$ BEGIN
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.table_constraints
+              WHERE constraint_name = '${name}'
+            ) THEN
+              ALTER TABLE ${table} ADD CONSTRAINT ${name}
+                FOREIGN KEY (${col}) REFERENCES ${ref}(id) ON DELETE ${onDelete};
+            END IF;
+          END $$;
+        `));
+      }
+      // Exactly one of workstream_id / task_id set (XOR via boolean inequality).
+      await tx.execute(sql.raw(`
+        DO $$ BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.table_constraints
+            WHERE constraint_name = 'specs_exactly_one_target'
+          ) THEN
+            ALTER TABLE specs ADD CONSTRAINT specs_exactly_one_target
+              CHECK ((workstream_id IS NULL) <> (task_id IS NULL));
           END IF;
         END $$;
       `));

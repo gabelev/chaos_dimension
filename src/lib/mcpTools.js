@@ -10,7 +10,7 @@
 import { eq, and, or, desc } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 import { getDb } from '../db/client.js';
-import { tasks, agents, workstreams } from '../db/schema.js';
+import { tasks, agents, workstreams, specs, specRevisions } from '../db/schema.js';
 import { withUserContext } from './userContext.js';
 
 // Resolve a workstream identifier (cuid id OR human slug) to the canonical id.
@@ -175,7 +175,7 @@ const TOOL_DEFS = [
   },
   {
     name: 'get_task',
-    description: 'Fetch one task by id (full detail including notes).',
+    description: 'Fetch one task by id (full detail including notes). Also returns a `specs` array of any spec/requirements docs attached to the task or inherited from its workstream — call get_spec on one to read its full content before starting work.',
     inputSchema: {
       type: 'object',
       properties: { id: { type: 'string' } },
@@ -186,7 +186,21 @@ const TOOL_DEFS = [
       return withUserContext(db, userId, async (tx) => {
         const rows = await tx.select().from(tasks).where(eq(tasks.id, input.id)).limit(1);
         if (!rows.length) throw new Error('task not found');
-        return rows[0];
+        const task = rows[0];
+        const specRows = await tx
+          .select({
+            id: specs.id,
+            title: specs.title,
+            workstreamId: specs.workstreamId,
+            taskId: specs.taskId,
+            version: specs.version,
+            updatedAt: specs.updatedAt,
+            createdVia: specs.createdVia,
+          })
+          .from(specs)
+          .where(or(eq(specs.taskId, task.id), eq(specs.workstreamId, task.workstream)));
+        const attached = specRows.map((s) => ({ ...s, scope: s.taskId ? 'task' : 'workstream' }));
+        return { ...task, specs: attached };
       });
     },
   },
@@ -320,6 +334,227 @@ const TOOL_DEFS = [
           .where(eq(tasks.id, input.id))
           .returning();
         return row;
+      });
+    },
+  },
+  {
+    name: 'create_spec',
+    description: 'Create a spec / requirements doc attached to EXACTLY ONE of a task or a workstream. Required: title, content (markdown), and exactly one of task (task id) or workstream (id or slug). A workstream spec is shared context for every task in that stream; a task spec is scoped to one task. Use this to capture a feature spec dictated to Claude so a coding agent can pull it later via get_task/get_spec.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string' },
+        content: { type: 'string' },
+        task: { type: 'string', description: 'Task id to attach to (omit if attaching to a workstream)' },
+        workstream: { type: 'string', description: 'Workstream id or slug to attach to (omit if attaching to a task)' },
+        note: { type: 'string', description: 'Optional summary of this initial revision' },
+      },
+      required: ['title', 'content'],
+      additionalProperties: false,
+    },
+    handler: async ({ db, userId, input }) => {
+      const title = input.title?.trim();
+      if (!title) throw new Error('title required');
+      if (typeof input.content !== 'string') throw new Error('content required');
+      const hasTask = !!input.task?.trim();
+      const hasWs = !!input.workstream?.trim();
+      if (hasTask === hasWs) throw new Error('provide exactly one of task or workstream');
+      return withUserContext(db, userId, async (tx) => {
+        let taskId = null;
+        let workstreamId = null;
+        if (hasTask) {
+          const rows = await tx.select().from(tasks).where(eq(tasks.id, input.task.trim())).limit(1);
+          if (!rows.length) throw new Error(`unknown task: ${input.task}`);
+          taskId = rows[0].id;
+        } else {
+          const wsId = await resolveWorkstreamId(tx, input.workstream);
+          if (!wsId) throw new Error(`unknown workstream: ${input.workstream}`);
+          workstreamId = wsId;
+        }
+        const [spec] = await tx
+          .insert(specs)
+          .values({
+            title,
+            content: input.content,
+            version: 1,
+            taskId,
+            workstreamId,
+            createdVia: 'mcp',
+            userId,
+          })
+          .returning();
+        await tx.insert(specRevisions).values({
+          specId: spec.id,
+          version: 1,
+          title,
+          content: input.content,
+          note: input.note ?? '',
+          createdVia: 'mcp',
+          userId,
+        });
+        return spec;
+      });
+    },
+  },
+  {
+    name: 'list_specs',
+    description: 'List spec / requirements docs (metadata only — use get_spec for full content). Optional filters: task (task id), workstream (id or slug), limit (default 20, max 200).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        task: { type: 'string' },
+        workstream: { type: 'string' },
+        limit: { type: 'number', minimum: 1, maximum: 200 },
+      },
+      additionalProperties: false,
+    },
+    handler: async ({ db, userId, input }) => {
+      return withUserContext(db, userId, async (tx) => {
+        const conds = [];
+        if (input.task) conds.push(eq(specs.taskId, input.task));
+        if (input.workstream) {
+          const wsId = await resolveWorkstreamId(tx, input.workstream);
+          if (!wsId) return [];
+          conds.push(eq(specs.workstreamId, wsId));
+        }
+        const limit = Math.min(input.limit ?? 20, 200);
+        let q = tx
+          .select({
+            id: specs.id,
+            title: specs.title,
+            workstreamId: specs.workstreamId,
+            taskId: specs.taskId,
+            version: specs.version,
+            updatedAt: specs.updatedAt,
+            createdVia: specs.createdVia,
+          })
+          .from(specs);
+        if (conds.length) q = q.where(and(...conds));
+        return q.orderBy(desc(specs.updatedAt)).limit(limit);
+      });
+    },
+  },
+  {
+    name: 'get_spec',
+    description: 'Fetch one spec by id with its full current content. Set includeRevisions to also get the revision history (metadata only — use get_spec_revision for an old body).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        includeRevisions: { type: 'boolean' },
+      },
+      required: ['id'],
+      additionalProperties: false,
+    },
+    handler: async ({ db, userId, input }) => {
+      return withUserContext(db, userId, async (tx) => {
+        const rows = await tx.select().from(specs).where(eq(specs.id, input.id)).limit(1);
+        if (!rows.length) throw new Error('spec not found');
+        const spec = rows[0];
+        if (input.includeRevisions) {
+          const revs = await tx
+            .select({
+              version: specRevisions.version,
+              title: specRevisions.title,
+              note: specRevisions.note,
+              createdVia: specRevisions.createdVia,
+              createdAt: specRevisions.createdAt,
+            })
+            .from(specRevisions)
+            .where(eq(specRevisions.specId, spec.id))
+            .orderBy(desc(specRevisions.version));
+          return { ...spec, revisions: revs };
+        }
+        return spec;
+      });
+    },
+  },
+  {
+    name: 'get_spec_revision',
+    description: 'Fetch the full content of one historical revision of a spec. Required: id (spec id), version.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        version: { type: 'number' },
+      },
+      required: ['id', 'version'],
+      additionalProperties: false,
+    },
+    handler: async ({ db, userId, input }) => {
+      return withUserContext(db, userId, async (tx) => {
+        const rows = await tx
+          .select()
+          .from(specRevisions)
+          .where(and(eq(specRevisions.specId, input.id), eq(specRevisions.version, input.version)))
+          .limit(1);
+        if (!rows.length) throw new Error('spec revision not found');
+        return rows[0];
+      });
+    },
+  },
+  {
+    name: 'update_spec',
+    description: 'Update a spec by id. Provide any of title, content, note. A content change appends a new revision and bumps the version; a title-only change does not.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        title: { type: 'string' },
+        content: { type: 'string' },
+        note: { type: 'string', description: 'Optional summary of the change, recorded on the new revision' },
+      },
+      required: ['id'],
+      additionalProperties: false,
+    },
+    handler: async ({ db, userId, input }) => {
+      if (!input.id) throw new Error('id required');
+      const hasTitle = typeof input.title === 'string';
+      const hasContent = typeof input.content === 'string';
+      if (!hasTitle && !hasContent) throw new Error('provide title and/or content to update');
+      return withUserContext(db, userId, async (tx) => {
+        const rows = await tx.select().from(specs).where(eq(specs.id, input.id)).limit(1);
+        if (!rows.length) throw new Error('spec not found');
+        const current = rows[0];
+        const newTitle = hasTitle ? input.title.trim() : current.title;
+        const contentChanged = hasContent && input.content !== current.content;
+        const updates = { title: newTitle, updatedAt: new Date() };
+        if (contentChanged) {
+          updates.content = input.content;
+          updates.version = current.version + 1;
+        }
+        const [updated] = await tx.update(specs).set(updates).where(eq(specs.id, input.id)).returning();
+        if (contentChanged) {
+          await tx.insert(specRevisions).values({
+            specId: current.id,
+            version: updated.version,
+            title: newTitle,
+            content: input.content,
+            note: input.note ?? '',
+            createdVia: 'mcp',
+            userId,
+          });
+        }
+        return updated;
+      });
+    },
+  },
+  {
+    name: 'delete_spec',
+    description: 'Delete a spec by id (its revision history is removed too).',
+    inputSchema: {
+      type: 'object',
+      properties: { id: { type: 'string' } },
+      required: ['id'],
+      additionalProperties: false,
+    },
+    handler: async ({ db, userId, input }) => {
+      if (!input.id) throw new Error('id required');
+      return withUserContext(db, userId, async (tx) => {
+        await tx.delete(specRevisions).where(eq(specRevisions.specId, input.id));
+        const [deleted] = await tx.delete(specs).where(eq(specs.id, input.id)).returning();
+        if (!deleted) throw new Error('spec not found');
+        return { ok: true, deleted };
       });
     },
   },

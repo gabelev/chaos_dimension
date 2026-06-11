@@ -34,6 +34,38 @@ export const tasks = pgTable('tasks', {
   userId: text('user_id'),
 });
 
+// Spec / requirements docs. RLS-scoped. A spec attaches to EXACTLY ONE of
+// a workstream (shared context for all its tasks) or a single task — the
+// "exactly one target" invariant is enforced in the app layer and by a CHECK
+// constraint installed in scripts/migrate-multi-tenant.js. content is markdown;
+// version is the current revision number (history lives in spec_revisions).
+export const specs = pgTable('specs', {
+  id: text('id').primaryKey().$defaultFn(() => createId()),
+  title: text('title').notNull(),
+  workstreamId: text('workstream_id'),
+  taskId: text('task_id'),
+  content: text('content').notNull().default(''),
+  version: integer('version').notNull().default(1),
+  createdVia: text('created_via').notNull().default('ui'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  userId: text('user_id'),
+});
+
+// Append-only revision history for specs. Every content change writes a new
+// row; specs.content always mirrors the latest revision's content.
+export const specRevisions = pgTable('spec_revisions', {
+  id: text('id').primaryKey().$defaultFn(() => createId()),
+  specId: text('spec_id').notNull(),
+  version: integer('version').notNull(),
+  title: text('title').notNull(),
+  content: text('content').notNull(),
+  note: text('note').notNull().default(''),
+  createdVia: text('created_via').notNull().default('ui'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  userId: text('user_id'),
+});
+
 export const agents = pgTable('agents', {
   id: text('id').primaryKey().$defaultFn(() => createId()),
   name: text('name').notNull(),

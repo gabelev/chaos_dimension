@@ -17,6 +17,7 @@ import TaskModal from '../components/TaskModal';
 import AgentCard from '../components/AgentCard';
 import AboutDialog from '../components/AboutDialog';
 import WorkstreamModal from '../components/WorkstreamModal';
+import SpecModal from '../components/SpecModal';
 import OnboardingCoach from '../components/OnboardingCoach';
 import { api } from '../lib/api';
 import { loadDemo, saveDemo, clearDemo, localId, slugify } from '../lib/demoStorage';
@@ -31,6 +32,8 @@ export default function App({ mode = 'live' }) {
   const [tasks, setTasks] = useState(isDemo ? loadDemo('tasks', SEED_TASKS) : []);
   const [agents, setAgents] = useState(isDemo ? loadDemo('agents', SEED_AGENTS) : []);
   const [workstreams, setWorkstreams] = useState(isDemo ? loadDemo('workstreams', SEED_WORKSTREAMS) : {});
+  const [specs, setSpecs] = useState(isDemo ? loadDemo('specs', []) : []);
+  const [editingSpec, setEditingSpec] = useState(null); // { spec, target }
   const [showAddTask, setShowAddTask] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [filterWorkstream, setFilterWorkstream] = useState("all");
@@ -72,11 +75,12 @@ export default function App({ mode = 'live' }) {
 
     const fetchAll = () => {
       if (typeof document !== 'undefined' && document.hidden) return;
-      Promise.all([api.listTasks(), api.listAgents(), api.listWorkstreams()])
-        .then(([t, a, ws]) => {
+      Promise.all([api.listTasks(), api.listAgents(), api.listWorkstreams(), api.listSpecs()])
+        .then(([t, a, ws, sp]) => {
           setTasks(t);
           setAgents(a);
           setWorkstreams(Object.fromEntries(ws.map(w => [w.id, { label: w.label, color: w.color, icon: w.icon }])));
+          setSpecs(sp);
         })
         .catch((err) => console.error('refresh failed', err));
     };
@@ -97,6 +101,7 @@ export default function App({ mode = 'live' }) {
   useEffect(() => { if (isDemo) saveDemo('tasks', tasks); }, [isDemo, tasks]);
   useEffect(() => { if (isDemo) saveDemo('agents', agents); }, [isDemo, agents]);
   useEffect(() => { if (isDemo) saveDemo('workstreams', workstreams); }, [isDemo, workstreams]);
+  useEffect(() => { if (isDemo) saveDemo('specs', specs); }, [isDemo, specs]);
 
   const nextWorkstreamId = useCallback((baseLabel, providedId) => {
     const base = slugify(providedId || baseLabel);
@@ -188,6 +193,69 @@ export default function App({ mode = 'live' }) {
     setEditingTask(null);
     if (!isDemo) await api.deleteTask(taskId).catch(console.error);
   }, [isDemo]);
+
+  // ── Specs (requirements docs) ──────────────────────────────────────────
+  const createSpec = useCallback(async (target, { title, content, note }) => {
+    if (isDemo) {
+      const now = new Date().toISOString();
+      const created = {
+        id: localId('s'), title, content, note, version: 1,
+        taskId: target.taskId ?? null, workstreamId: target.workstreamId ?? null,
+        createdVia: 'ui', updatedAt: now,
+        revisions: [{ version: 1, title, note: note || '', createdAt: now }],
+      };
+      setSpecs(prev => [created, ...prev]);
+      return created;
+    }
+    const body = { title, content, note };
+    if (target.taskId) body.task = target.taskId;
+    if (target.workstreamId) body.workstream = target.workstreamId;
+    const created = await api.createSpec(body);
+    setSpecs(prev => [created, ...prev.filter(s => s.id !== created.id)]);
+    return created;
+  }, [isDemo]);
+
+  const updateSpec = useCallback(async (id, updates) => {
+    if (isDemo) {
+      const now = new Date().toISOString();
+      setSpecs(prev => prev.map(s => {
+        if (s.id !== id) return s;
+        const contentChanged = typeof updates.content === 'string' && updates.content !== s.content;
+        const version = contentChanged ? (s.version || 1) + 1 : s.version;
+        const title = updates.title ?? s.title;
+        const revisions = contentChanged
+          ? [{ version, title, note: updates.note || '', createdAt: now }, ...(s.revisions || [])]
+          : (s.revisions || []);
+        return { ...s, ...updates, title, version, updatedAt: now, revisions };
+      }));
+      return;
+    }
+    const updated = await api.updateSpec(id, updates);
+    setSpecs(prev => prev.map(s => s.id === id ? { ...s, ...updated } : s));
+    return updated;
+  }, [isDemo]);
+
+  const deleteSpec = useCallback(async (id) => {
+    setSpecs(prev => prev.filter(s => s.id !== id));
+    setEditingSpec(null);
+    if (!isDemo) await api.deleteSpec(id).catch(console.error);
+  }, [isDemo]);
+
+  // Existing specs are listed as metadata; load the full body on open. In demo
+  // mode the content already lives in local state.
+  const loadFullSpec = useCallback(async (id) => {
+    if (isDemo) return specs.find(s => s.id === id) ?? null;
+    return api.getSpec(id);
+  }, [isDemo, specs]);
+
+  const loadSpecRevision = useCallback(async (id, version) => {
+    if (isDemo) {
+      const s = specs.find(x => x.id === id);
+      const rev = (s?.revisions || []).find(r => r.version === version);
+      return rev ? { ...rev, content: s.content } : null;
+    }
+    return api.getSpecRevision(id, version);
+  }, [isDemo, specs]);
 
   const dispatchToAgent = useCallback((taskId) => {
     const free = agents.find(a => a.status === "idle");
@@ -483,6 +551,7 @@ export default function App({ mode = 'live' }) {
                     <TaskCard
                       key={task.id} task={task} agents={agents}
                       workstreams={workstreams}
+                      hasSpec={specs.some(s => s.taskId === task.id || s.workstreamId === task.workstream)}
                       setDragState={setDragState}
                       onEdit={() => setEditingTask(task)}
                       onDispatch={() => dispatchToAgent(task.id)}
@@ -577,6 +646,14 @@ export default function App({ mode = 'live' }) {
         <TaskModal
           task={editingTask}
           workstreams={workstreams}
+          specs={specs
+            .filter(s => s.taskId === editingTask.id || s.workstreamId === editingTask.workstream)
+            .map(s => ({ ...s, scope: s.taskId === editingTask.id ? 'task' : 'workstream' }))}
+          onNewSpec={() => setEditingSpec({ spec: null, target: { taskId: editingTask.id } })}
+          onOpenSpec={(s) => setEditingSpec({
+            spec: s,
+            target: s.taskId ? { taskId: s.taskId } : { workstreamId: s.workstreamId },
+          })}
           onSave={(u) => { updateTask(editingTask.id, u); setEditingTask(null); }}
           onClose={() => setEditingTask(null)}
           onDelete={() => deleteTask(editingTask.id)}
@@ -587,10 +664,26 @@ export default function App({ mode = 'live' }) {
       {showWorkstreams && (
         <WorkstreamModal
           workstreams={workstreams}
+          specs={specs}
           onCreate={createWorkstream}
           onUpdate={updateWorkstream}
           onDelete={deleteWorkstream}
+          onNewSpec={(wsId) => setEditingSpec({ spec: null, target: { workstreamId: wsId } })}
+          onOpenSpec={(s) => setEditingSpec({ spec: s, target: { workstreamId: s.workstreamId } })}
           onClose={() => setShowWorkstreams(false)}
+        />
+      )}
+      {editingSpec && (
+        <SpecModal
+          spec={editingSpec.spec}
+          loadFull={loadFullSpec}
+          loadRevision={loadSpecRevision}
+          onSave={async (payload) => {
+            if (editingSpec.spec?.id) await updateSpec(editingSpec.spec.id, payload);
+            else await createSpec(editingSpec.target, payload);
+          }}
+          onDelete={editingSpec.spec?.id ? () => deleteSpec(editingSpec.spec.id) : undefined}
+          onClose={() => setEditingSpec(null)}
         />
       )}
     </div>

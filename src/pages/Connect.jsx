@@ -284,7 +284,7 @@ function ClaudeCodeCard({ theme, mcpUrl }) {
         <strong>Fully quit and restart Claude Code</strong> so it loads the new config.
       </Step>
       <Step n={4} theme={theme}>
-        Inside Claude Code, run <code>/mcp</code>. You should see <code>chaos-dimension</code> connected with 7 tools.
+        Inside Claude Code, run <code>/mcp</code>. You should see <code>chaos-dimension</code> connected with its tools.
       </Step>
       <VerifyPanel
         theme={theme}

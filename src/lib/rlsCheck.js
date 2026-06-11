@@ -11,7 +11,7 @@ import { sql } from 'drizzle-orm';
 
 // Source of truth for which tables require RLS. The migration installs
 // policies on exactly these tables, and verifyRlsState asserts the same.
-export const RLS_REQUIRED_TABLES = ['tasks', 'workstreams', 'agents', 'runs'];
+export const RLS_REQUIRED_TABLES = ['tasks', 'workstreams', 'agents', 'runs', 'specs', 'spec_revisions'];
 
 // Returns an array of human-readable problem strings. Empty array = healthy.
 // Designed to run against a connection that can read pg_catalog / pg_policies

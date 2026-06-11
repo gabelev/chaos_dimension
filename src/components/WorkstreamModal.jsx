@@ -10,15 +10,17 @@
 import { useState } from 'react';
 import { useTheme } from '../themes';
 import ModalShell from './ModalShell';
+import SpecsSection from './SpecsSection';
 
 const PALETTE = [
   '#CC0066', '#FF6600', '#FFAA00', '#66AA00',
   '#0099CC', '#6633CC', '#999999', '#000000',
 ];
 
-function WorkstreamRow({ id, ws, onUpdate, onDelete }) {
+function WorkstreamRow({ id, ws, specs = [], onUpdate, onDelete, onNewSpec, onOpenSpec }) {
   const { theme } = useTheme();
   const [editing, setEditing] = useState(false);
+  const [showSpecs, setShowSpecs] = useState(false);
   const [label, setLabel] = useState(ws.label);
   const [color, setColor] = useState(ws.color);
   const [icon, setIcon] = useState(ws.icon);
@@ -82,17 +84,32 @@ function WorkstreamRow({ id, ws, onUpdate, onDelete }) {
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderBottom: `1px solid ${theme.chromeDark}` }}>
-      <span style={{ fontSize: 16, width: 24, textAlign: 'center' }}>{ws.icon}</span>
-      <span style={{ flex: 1, fontSize: 12 }}>{ws.label}</span>
-      <span style={{ width: 16, height: 16, background: ws.color, border: `1px solid ${theme.chromeDark}` }} title={ws.color} />
-      <span style={{ fontSize: 10, color: theme.textDim, fontFamily: 'Courier New, monospace' }}>{id}</span>
-      <button type="button" className="mac-btn" onClick={() => setEditing(true)} disabled={busy} style={{ fontSize: 10, padding: '1px 8px' }}>
-        Edit
-      </button>
-      <button type="button" className="mac-btn" onClick={remove} disabled={busy} style={{ fontSize: 10, padding: '1px 8px', color: '#990000' }}>
-        Delete
-      </button>
+    <div style={{ borderBottom: `1px solid ${theme.chromeDark}` }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px' }}>
+        <span style={{ fontSize: 16, width: 24, textAlign: 'center' }}>{ws.icon}</span>
+        <span style={{ flex: 1, fontSize: 12 }}>{ws.label}</span>
+        <span style={{ width: 16, height: 16, background: ws.color, border: `1px solid ${theme.chromeDark}` }} title={ws.color} />
+        <span style={{ fontSize: 10, color: theme.textDim, fontFamily: 'Courier New, monospace' }}>{id}</span>
+        <button type="button" className="mac-btn" onClick={() => setShowSpecs((v) => !v)} disabled={busy} style={{ fontSize: 10, padding: '1px 8px' }}>
+          {showSpecs ? '▾' : '▸'} Specs{specs.length ? ` (${specs.length})` : ''}
+        </button>
+        <button type="button" className="mac-btn" onClick={() => setEditing(true)} disabled={busy} style={{ fontSize: 10, padding: '1px 8px' }}>
+          Edit
+        </button>
+        <button type="button" className="mac-btn" onClick={remove} disabled={busy} style={{ fontSize: 10, padding: '1px 8px', color: '#990000' }}>
+          Delete
+        </button>
+      </div>
+      {showSpecs && (
+        <div style={{ padding: '0 8px 8px' }}>
+          <SpecsSection
+            specs={specs}
+            onNew={() => onNewSpec(id)}
+            onOpen={onOpenSpec}
+            emptyHint="No specs for this workstream yet."
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -169,9 +186,13 @@ function NewWorkstreamForm({ onCreate, defaultColor }) {
   );
 }
 
-export default function WorkstreamModal({ workstreams, onCreate, onUpdate, onDelete, onClose }) {
+export default function WorkstreamModal({ workstreams, specs = [], onCreate, onUpdate, onDelete, onNewSpec, onOpenSpec, onClose }) {
   const { theme } = useTheme();
   const entries = Object.entries(workstreams);
+  const specsByWorkstream = specs.reduce((acc, s) => {
+    if (s.workstreamId) (acc[s.workstreamId] ||= []).push(s);
+    return acc;
+  }, {});
   return (
     <ModalShell title="Workstreams" onClose={onClose} width={520} zIndex={400}>
       <div style={{ background: theme.windowBg, minHeight: 100 }}>
@@ -181,7 +202,16 @@ export default function WorkstreamModal({ workstreams, onCreate, onUpdate, onDel
           </div>
         ) : (
           entries.map(([id, ws]) => (
-            <WorkstreamRow key={id} id={id} ws={ws} onUpdate={onUpdate} onDelete={onDelete} />
+            <WorkstreamRow
+              key={id}
+              id={id}
+              ws={ws}
+              specs={specsByWorkstream[id] || []}
+              onUpdate={onUpdate}
+              onDelete={onDelete}
+              onNewSpec={onNewSpec}
+              onOpenSpec={onOpenSpec}
+            />
           ))
         )}
       </div>

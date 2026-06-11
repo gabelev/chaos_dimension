@@ -11,8 +11,9 @@ import { useState } from 'react';
 import { COLUMNS, COL_LABELS } from '../data/workstreams';
 import { useTheme } from '../themes';
 import ModalShell from './ModalShell';
+import SpecsSection from './SpecsSection';
 
-export default function TaskModal({ task, workstreams = {}, onSave, onClose, onDelete }) {
+export default function TaskModal({ task, workstreams = {}, onSave, onClose, onDelete, specs, onNewSpec, onOpenSpec }) {
   const { theme } = useTheme();
   const wsKeys = Object.keys(workstreams);
   const defaultWs = task?.workstream || wsKeys[0] || 'general';
@@ -78,6 +79,15 @@ export default function TaskModal({ task, workstreams = {}, onSave, onClose, onD
           />
           ⚡ Agent-dispatchable
         </label>
+
+        {onNewSpec && (
+          <SpecsSection
+            specs={specs}
+            onNew={onNewSpec}
+            onOpen={onOpenSpec}
+            emptyHint="No specs yet. Add a requirements doc for this task or its workstream."
+          />
+        )}
 
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
           <div>

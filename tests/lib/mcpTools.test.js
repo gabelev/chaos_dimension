@@ -79,9 +79,15 @@ describe('mcpTools registry', () => {
         'update_task',
         'claim_task',
         'report_progress',
+        'create_spec',
+        'list_specs',
+        'get_spec',
+        'get_spec_revision',
+        'update_spec',
+        'delete_spec',
       ])
     );
-    expect(names).toHaveLength(10);
+    expect(names).toHaveLength(16);
   });
 
   it('every tool has name, description, inputSchema, handler', () => {

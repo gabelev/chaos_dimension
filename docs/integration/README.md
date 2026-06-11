@@ -54,7 +54,7 @@ Fully quit any running Claude Code sessions and start a new one. Inside it, run:
 /mcp
 ```
 
-You should see `chaos-dimension` listed as connected with 7 tools. If it shows pending or failed, the most common causes are: token typo, token revoked, or the deploy hasn't picked up the new schema.
+You should see `chaos-dimension` listed as connected with its tools. If it shows pending or failed, the most common causes are: token typo, token revoked, or the deploy hasn't picked up the new schema.
 
 The seven tools: `list_workstreams`, `list_tasks`, `get_task`, `create_task`, `update_task`, `claim_task`, `report_progress`.
 
