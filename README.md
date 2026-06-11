@@ -108,6 +108,18 @@ Full MCP setup details and troubleshooting: see [`docs/integration/README.md`](d
 
 > **Note:** if your deploy's apex domain redirects to `www`, use the `www.` URL in step 2. MCP clients don't follow POST redirects and you'll see `JSON Parse error: Unrecognized token '<'`.
 
+### Coordinate agents on a droplet or remote server with `claude-rc-server`
+
+Chaos Dimension is the board; [`claude-rc-server`](https://github.com/gabelev/claude-rc-server) is the runtime that keeps agents working on it. It runs persistent, multi-repo Claude Code Remote Control on a headless box — a DigitalOcean droplet, any Ubuntu/Debian VPS, or a spare machine on your LAN — so you can start and drive long-lived agent sessions from [claude.ai/code](https://claude.ai/code) or the mobile app instead of a terminal that has to stay open on your laptop.
+
+The two repos mesh through MCP. `claude-rc-server` runs one server per repo as a systemd user service (surviving reboots) and registers this project's MCP endpoint at **user scope** via its `setup-mcp.sh` script — the same registration described in [Connect Claude Code via MCP](#connect-claude-code-via-mcp), done once for every repo on the box. From then on:
+
+- Agents running on the server **read** their work from Chaos Dimension (`list_tasks`, `claim_task`) and **report progress back** (`report_progress`, `update_task`), so the Kanban board and Agent Monitor reflect what's happening on the droplet in near real time.
+- Because the token lives in the server's env file, every session across every repo inherits the same Chaos Dimension connection. Configure once, available everywhere.
+- You stay in the loop from your phone: dispatch a task on the board, an agent on the server claims it, and the logs stream into the Agent Monitor while your laptop is closed.
+
+In short: Chaos Dimension coordinates *what* gets worked on and surfaces the state; `claude-rc-server` is *where* the agents actually run. See its [README](https://github.com/gabelev/claude-rc-server#readme) for the full setup — `install.sh`, `auth.sh`, `setup-mcp.sh`, then `add-repo.sh` once per repo.
+
 ## Features
 
 - Kanban board: Backlog → Active → Review → Done
