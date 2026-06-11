@@ -120,6 +120,17 @@ The two repos mesh through MCP. `claude-rc-server` runs one server per repo as a
 
 In short: Chaos Dimension coordinates *what* gets worked on and surfaces the state; `claude-rc-server` is *where* the agents actually run. See its [README](https://github.com/gabelev/claude-rc-server#readme) for the full setup — `install.sh`, `auth.sh`, `setup-mcp.sh`, then `add-repo.sh` once per repo.
 
+## Spec / requirements docs
+
+Tasks and workstreams can carry a **spec** — a versioned markdown requirements doc — so the context for a piece of work lives next to the work instead of in a chat scrollback. A spec attaches to exactly one of a workstream (shared context for every task in it) or a single task.
+
+The intended loop is voice-to-code: dictate a spec to Claude ("write a spec for the import feature and attach it to the Build workstream"), then have a coding agent pull it back inside Claude Code when it picks up a task. Every content edit appends an immutable revision, so a spec can evolve without losing earlier versions.
+
+- **In the app** — open a task or workstream and use the Specs section to add or edit a doc. Content is markdown; the revision history is listed, and older revisions can be viewed.
+- **Over MCP** — `create_spec`, `list_specs`, `get_spec`, `get_spec_revision`, `update_spec`, `delete_spec`. `get_task` also returns a `specs` array of the task's own plus its workstream's specs, so an agent that claims a task sees them immediately and can `get_spec` the full content before starting work.
+
+Specs are per-user (RLS-scoped) just like tasks and workstreams.
+
 ## Features
 
 - Kanban board: Backlog → Active → Review → Done
@@ -145,6 +156,7 @@ React 18 + Vite frontend. Vercel serverless functions for `/api/*`. Neon Postgre
 - [x] Interactive demo board with localStorage persistence
 - [x] MCP server (v0.4) — Claude Code claims and updates tasks via standard MCP tools
 - [x] OAuth 2.1 + dynamic client registration on `/api/mcp` so Claude Desktop and claude.ai web can connect
+- [x] Spec / requirements docs — versioned markdown specs on tasks/workstreams, authored in-app or via MCP
 - [ ] AIM Messenger-style chat panel that routes to the Anthropic API
 - [ ] Settings → API Keys management UI (currently CLI-only)
 - [ ] Cloud orchestrator: ephemeral containers that run agent tasks while your laptop is closed
