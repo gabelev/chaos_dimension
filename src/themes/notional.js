@@ -10,8 +10,11 @@
 
 // Notional — a Notion-style skin: warm off-white canvas, near-black warm text
 // (#37352F), hairline #E9E9E7 borders, soft shadows, gentle radii, and the
-// Notion blue (#2383E2) as the single accent. System sans stack, like Notion's.
-const FONT = `ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif`;
+// Notion blue (#2383E2) as the single accent.
+//
+// Inter is the closest free match to Notion's UI sans (loaded via @import in
+// GLOBAL_CSS); the system stack falls in behind it.
+const FONT = `'Inter', ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif`;
 
 const colors = {
   bg: '#F7F6F3',          // warm page/desktop background
@@ -29,6 +32,7 @@ const colors = {
 };
 
 const GLOBAL_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: ${FONT};
@@ -80,6 +84,30 @@ const theme = {
   cardBorder: `1px solid ${colors.chromeDark}`,
   cardBg: colors.windowBg,
   cardHoverBg: colors.chromeLight,
+  // Notion-style kanban column headers: title-case status text tinted by the
+  // per-column color, with a plain gray count (no bordered pill). App.jsx reads
+  // these and falls back to its default styling for themes that omit them.
+  columnHeader: {
+    fontFamily: FONT,
+    fontSize: 14,
+    fontWeight: 600,
+    letterSpacing: '-0.01em',
+    textTransform: 'none',
+  },
+  columnColors: {
+    backlog: '#C4554D', // red
+    active: '#CC782F',  // orange
+    review: '#487CA5',  // blue
+    done: '#548164',    // green
+  },
+  columnCount: {
+    fontSize: 14,
+    fontWeight: 500,
+    color: colors.textDim,
+    background: 'transparent',
+    border: 'none',
+    padding: '0 4px',
+  },
   desktop: {
     minHeight: '100vh',
     background: colors.bg,
@@ -101,12 +129,12 @@ const theme = {
     justifyContent: 'flex-start',
     paddingLeft: 16,
     borderBottom: `1px solid ${colors.chromeDark}`,
-    fontWeight: 600,
-    fontSize: 14,
+    fontWeight: 700,
+    fontSize: 16,
     background: colors.chrome,
     color: colors.text,
     textTransform: 'none',
-    letterSpacing: 'normal',
+    letterSpacing: '-0.01em',
   },
   input: {
     width: '100%',
