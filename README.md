@@ -1,14 +1,12 @@
 # Chaos Dimension
 
-> A note from the author: I wanted a JIRA, but for me. Specifically, a JIRA with a control panel for dispatching coding agents and watching them work. I looked and did not find one. So I built it, and I started by making it look like a 1991 Macintosh — then I added a few more skins so it could match my mood: a green-on-black terminal for late nights, a quiet Minimal for focus, and a flat Modern for when I'm screen-sharing with someone who didn't grow up with a beige tower.
+> A note from the author: I wanted a JIRA, but for me. Specifically, a JIRA with a control panel for dispatching coding agents and watching them work. I looked and did not find one. So I built it, and I started by making it look like a 1991 Macintosh — then I added a few more skins so it could match my mood: a green-on-black terminal for late nights, a quiet Minimal for focus, and a clean Notional skin for when I want it to look like the tool everyone already knows.
 
-A themeable mission control for personal projects and AI agent orchestration. Kanban on the left, agent monitor on the right. Four skins: Classic Mac OS (the default), Minimal, Terminal, and Modern.
+A themeable mission control for personal projects and AI agent orchestration. Kanban on the left, agent monitor on the right. Four skins: Classic Mac OS (the default), Notional, Minimal, and Terminal.
 
-| Classic Mac OS | Minimal |
-| --- | --- |
-| ![Classic Mac OS theme](screenshots/theme-classic.png) | ![Minimal theme](screenshots/theme-minimal.png) |
-| **Terminal** | **Modern** |
-| ![Terminal theme](screenshots/theme-terminal.png) | ![Modern theme](screenshots/theme-modern.png) |
+| Classic Mac OS | Minimal | Terminal |
+| --- | --- | --- |
+| ![Classic Mac OS theme](screenshots/theme-classic.png) | ![Minimal theme](screenshots/theme-minimal.png) | ![Terminal theme](screenshots/theme-terminal.png) |
 
 Live demo: [chaosdimension.fyi](https://chaosdimension.fyi)
 
@@ -18,7 +16,7 @@ Modern project trackers are bloated, modern UIs are beige, and none of them have
 
 ## Design Choices
 
-Four themes, one layout. Classic Mac OS System 7 (the default — striped title bars, beveled buttons, blue dither desktop) for when nostalgia is the feature. Minimal for when you want the chrome to disappear. Terminal for green-on-black late-night hacker mode. Modern for when you're screen-sharing with civilians.
+Four themes, one layout. Classic Mac OS System 7 (the default — striped title bars, beveled buttons, blue dither desktop) for when nostalgia is the feature. Notional for a clean, Notion-style warm-gray look that disappears into a workday. Minimal for when you want the chrome to disappear. Terminal for green-on-black late-night hacker mode.
 
 Themes are a theme provider plus CSS-variable-style style objects, not a component library swap — every theme renders the exact same React tree. Inline styles throughout, no Tailwind, no shadcn. The whole point was to prove that a 1991 aesthetic could share a codebase with a 2026 one without either feeling like a compromise.
 
@@ -141,7 +139,7 @@ Specs are per-user (RLS-scoped) just like tasks and workstreams.
 - Owner admin page (`/admin`): mint/revoke invites, reset a user's password, and invite from the waitlist — all from the browser (the CLI scripts still work)
 - MCP server: connect Claude Code; tasks update from inside your coding sessions
 - Spec / requirements docs: attach a versioned markdown doc to a workstream or a task (dictate one to Claude, pull it back via MCP when an agent picks up the work)
-- Four themes (Classic Mac OS, Minimal, Terminal, Modern)
+- Four themes (Classic Mac OS, Notional, Minimal, Terminal)
 - Live dashboard updates (polls every 10s when the tab is visible)
 
 ## Stack
@@ -152,7 +150,7 @@ React 18 + Vite frontend. Vercel serverless functions for `/api/*`. Neon Postgre
 
 - [x] Database (Postgres via Neon)
 - [x] Sign-on screen, Mac OS login dialog style
-- [x] Multi-theme system (Classic / Minimal / Terminal / Modern)
+- [x] Multi-theme system (Classic / Notional / Minimal / Terminal)
 - [x] Interactive demo board with localStorage persistence
 - [x] MCP server (v0.4) — Claude Code claims and updates tasks via standard MCP tools
 - [x] OAuth 2.1 + dynamic client registration on `/api/mcp` so Claude Desktop and claude.ai web can connect

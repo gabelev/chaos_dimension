@@ -540,8 +540,12 @@ export default function App({ mode = 'live' }) {
                   borderBottom: `1px solid ${MAC.border}`,
                   display: "flex", justifyContent: "space-between", alignItems: "center",
                 }}>
-                  <span style={{ fontWeight: "bold", fontSize: 11 }}>{COL_LABELS[col]}</span>
-                  <span style={{
+                  <span style={MAC.columnHeader
+                    ? { ...MAC.columnHeader, color: MAC.columnColors?.[col] ?? MAC.columnHeader.color ?? MAC.text }
+                    : { fontWeight: "bold", fontSize: 11 }}>
+                    {COL_LABELS[col]}
+                  </span>
+                  <span style={MAC.columnCount ?? {
                     fontSize: 10, color: MAC.textDim, background: MAC.chromeLight,
                     padding: "0 5px", borderRadius: 3, border: `1px solid ${MAC.chromeDark}`,
                   }}>
