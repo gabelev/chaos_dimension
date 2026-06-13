@@ -25,6 +25,20 @@ Themes are a theme provider plus CSS-variable-style style objects, not a compone
 "Chaos dimension" is a lyric from ["Almost Had to Start a Fight / In and Out of Patience"](https://open.spotify.com/track/7xhZCVsVhDSjhFm41mOX10?si=5bc063da68f24a56) by Parquet Courts, a Brooklyn band. Felt about right for a tool that orchestrates several agents trying to do several things at once.
 
 > "Can someone tell me the reason? I'm in the Chaos Dimension. Trapped in a brutal invention." -Parquet Courts
+
+## The workflow
+
+Chaos Dimension is one plane in a loop that runs from a half-formed idea to an agent shipping work on a remote box — and back.
+
+![Chaos Dimension workflow: Notion to the board to Chaos Conductor to Claude Code agents, and back](docs/workflow.svg)
+
+1. **Think in Notion.** Heavy thinking and requirements live in Notion. A Claude session reads them (over the Notion MCP) and works with you to flesh those requirements into concrete features.
+2. **Land tasks on the board.** Those features become tasks in Chaos Dimension — the neutral, MCP-native ledger of *what work exists*. Spec / requirements docs ride along on each task or workstream (see [Spec / requirements docs](#spec--requirements-docs)).
+3. **Hand off to Chaos Conductor.** [Chaos Conductor](https://github.com/gabelev/chaos-conductor) is the control plane: tell it to distribute the `remoteRunnable` tasks across the fleet, and it provisions and drives the runtime for you — no SSH.
+4. **Agents execute, and report back.** Claude Code sessions run on a remote box (via [`claude-rc-server`](https://github.com/gabelev/claude-rc-server)), claim tasks, do the work, and **update the board** — `claim_task` → `report_progress` → move to *Review* / *Done*. You watch from the Agent Monitor, review, and refine the next round in Notion. The loop continues.
+
+The split is deliberate: **you own coordination (this board) and control (the Conductor); you rent the runtime.** The plan lives in a substrate you control, not inside any single agent's context or a vendor's dashboard.
+
 ## How to build and deploy your own Chaos Dimension
 
 ### Local development
@@ -118,6 +132,8 @@ The two repos mesh through MCP. `claude-rc-server` runs one server per repo as a
 
 In short: Chaos Dimension coordinates *what* gets worked on and surfaces the state; `claude-rc-server` is *where* the agents actually run. See its [README](https://github.com/gabelev/claude-rc-server#readme) for the full setup — `install.sh`, `auth.sh`, `setup-mcp.sh`, then `add-repo.sh` once per repo.
 
+**Driving it declaratively with Chaos Conductor.** `claude-rc-server` is still operated by hand today — SSH in, run the scripts, `systemctl --user`, watch `free -h`. [Chaos Conductor](https://github.com/gabelev/chaos-conductor) is the control plane that automates that: an MCP surface (and, ahead, a reconcile loop) that provisions the box, adds repos, and starts/stops/restarts servers driven by the board's `remoteRunnable` tasks — no SSH. It's a kubelet/control-plane split — `claude-rc-server` is the per-repo worker, the Conductor is the one-per-box controller that drives many. See its [README](https://github.com/gabelev/chaos-conductor#readme).
+
 ## Spec / requirements docs
 
 Tasks and workstreams can carry a **spec** — a versioned markdown requirements doc — so the context for a piece of work lives next to the work instead of in a chat scrollback. A spec attaches to exactly one of a workstream (shared context for every task in it) or a single task.
@@ -159,6 +175,7 @@ React 18 + Vite frontend. Vercel serverless functions for `/api/*`. Neon Postgre
 - [ ] Settings → API Keys management UI (currently CLI-only)
 - [ ] Cloud orchestrator: ephemeral containers that run agent tasks while your laptop is closed
 - [~] Remote agent runtime: drive long-lived agents on a droplet/VPS/local box via [`claude-rc-server`](https://github.com/gabelev/claude-rc-server), reporting to the board over MCP (persistent servers today; ephemeral containers still TODO)
+- [~] Control plane: drive the runtime declaratively from the board via [Chaos Conductor](https://github.com/gabelev/chaos-conductor) (M1 shipped — MCP wrappers + status; the reconcile loop is M3)
 - [ ] Worklog export for blog posts
 
 ## Contributing
