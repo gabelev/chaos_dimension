@@ -87,6 +87,30 @@ describeMaybe('MCP manage_workstream tools (live DB)', () => {
     expect(updated.id).toBe(original.id);
   }, 30000);
 
+  it('update_workstream flips isPublic on and off', async () => {
+    const original = await runTool('create_workstream', { label: `Ledger ${createId()}` }, { db, userId: userA });
+    expect(original.isPublic).toBe(false);
+    const published = await runTool('update_workstream', {
+      idOrSlug: original.slug,
+      isPublic: true,
+    }, { db, userId: userA });
+    expect(published.isPublic).toBe(true);
+    const unpublished = await runTool('update_workstream', {
+      idOrSlug: original.id,
+      isPublic: false,
+    }, { db, userId: userA });
+    expect(unpublished.isPublic).toBe(false);
+  }, 30000);
+
+  it('update_workstream ignores a non-boolean isPublic', async () => {
+    const original = await runTool('create_workstream', { label: `Coerce ${createId()}` }, { db, userId: userA });
+    let err;
+    try {
+      await runTool('update_workstream', { idOrSlug: original.id, isPublic: 'true' }, { db, userId: userA });
+    } catch (e) { err = e; }
+    expect(err?.message).toMatch(/no fields to update/i);
+  }, 30000);
+
   it('update_workstream throws when no editable fields supplied', async () => {
     const original = await runTool('create_workstream', { label: `Empty ${createId()}` }, { db, userId: userA });
     let err;

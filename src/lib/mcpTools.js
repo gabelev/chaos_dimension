@@ -89,7 +89,7 @@ const TOOL_DEFS = [
   },
   {
     name: 'update_workstream',
-    description: 'Update a workstream by id or slug. Provide any of label, color, icon. Slug is not editable to avoid breaking references.',
+    description: 'Update a workstream by id or slug. Provide any of label, color, icon, isPublic. Setting isPublic true exposes the workstream (and its tasks/specs) on the unauthenticated read-only public ledger at /api/public/:slug; false removes it. Slug is not editable to avoid breaking references.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -97,6 +97,7 @@ const TOOL_DEFS = [
         label: { type: 'string' },
         color: { type: 'string' },
         icon: { type: 'string' },
+        isPublic: { type: 'boolean' },
       },
       required: ['idOrSlug'],
       additionalProperties: false,
@@ -108,6 +109,7 @@ const TOOL_DEFS = [
       for (const k of ALLOWED) {
         if (k in input && typeof input[k] === 'string') updates[k] = input[k];
       }
+      if ('isPublic' in input && typeof input.isPublic === 'boolean') updates.isPublic = input.isPublic;
       if (Object.keys(updates).length === 0) throw new Error('no fields to update');
       return withUserContext(db, userId, async (tx) => {
         const wsId = await resolveWorkstreamId(tx, input.idOrSlug);
