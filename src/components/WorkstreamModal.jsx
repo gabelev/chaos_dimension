@@ -24,12 +24,13 @@ function WorkstreamRow({ id, ws, specs = [], onUpdate, onDelete, onNewSpec, onOp
   const [label, setLabel] = useState(ws.label);
   const [color, setColor] = useState(ws.color);
   const [icon, setIcon] = useState(ws.icon);
+  const [isPublic, setIsPublic] = useState(!!ws.isPublic);
   const [busy, setBusy] = useState(false);
 
   async function save() {
     setBusy(true);
     try {
-      await onUpdate(id, { label, color, icon });
+      await onUpdate(id, { label, color, icon, isPublic });
       setEditing(false);
     } finally {
       setBusy(false);
@@ -73,6 +74,17 @@ function WorkstreamRow({ id, ws, specs = [], onUpdate, onDelete, onNewSpec, onOp
             style={{ ...theme.input, width: 80, marginLeft: 8 }}
           />
         </div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, marginBottom: 6, cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={isPublic}
+            onChange={(e) => setIsPublic(e.target.checked)}
+          />
+          <span>
+            Public ledger — anyone can read this workstream (no login) at{' '}
+            <code style={{ fontFamily: 'Courier New, monospace' }}>/api/public/{ws.slug || id}</code>
+          </span>
+        </label>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
           <button type="button" className="mac-btn" onClick={() => setEditing(false)} disabled={busy}>Cancel</button>
           <button type="button" className="mac-btn mac-btn-primary" onClick={save} disabled={busy || !label.trim()}>
@@ -87,7 +99,17 @@ function WorkstreamRow({ id, ws, specs = [], onUpdate, onDelete, onNewSpec, onOp
     <div style={{ borderBottom: `1px solid ${theme.chromeDark}` }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px' }}>
         <span style={{ fontSize: 16, width: 24, textAlign: 'center' }}>{ws.icon}</span>
-        <span style={{ flex: 1, fontSize: 12 }}>{ws.label}</span>
+        <span style={{ flex: 1, fontSize: 12 }}>
+          {ws.label}
+          {ws.isPublic && (
+            <span
+              title={`Public — readable without login at /api/public/${ws.slug || id}`}
+              style={{ marginLeft: 6, fontSize: 10, color: theme.textDim }}
+            >
+              🌐 public
+            </span>
+          )}
+        </span>
         <span style={{ width: 16, height: 16, background: ws.color, border: `1px solid ${theme.chromeDark}` }} title={ws.color} />
         <span style={{ fontSize: 10, color: theme.textDim, fontFamily: 'Courier New, monospace' }}>{id}</span>
         <button type="button" className="mac-btn" onClick={() => setShowSpecs((v) => !v)} disabled={busy} style={{ fontSize: 10, padding: '1px 8px' }}>

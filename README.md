@@ -145,6 +145,18 @@ The intended loop is voice-to-code: dictate a spec to Claude ("write a spec for 
 
 Specs are per-user (RLS-scoped) just like tasks and workstreams.
 
+## Public ledger workstreams
+
+A workstream can be marked **public** (Workstreams modal → Edit → "Public ledger"). A public workstream — its tasks and its specs — becomes readable without authentication at:
+
+```
+GET /api/public/<slug-or-id>
+```
+
+The response is `{ workstream, tasks, specs }`, read-only, rate-limited per IP, and stripped of user ids. Everything else stays private: the flag is enforced in Postgres by dedicated SELECT-only RLS policies that only activate inside the public handler's transaction, so authenticated sessions and MCP agents keep seeing exactly their own rows. Toggling the flag off makes the workstream 404 again (indistinguishable from nonexistent).
+
+Existing deploys need the new column + policies: `npm run db:push` then `npm run db:migrate-multi-tenant`.
+
 ## Features
 
 - Kanban board: Backlog → Active → Review → Done
@@ -155,6 +167,7 @@ Specs are per-user (RLS-scoped) just like tasks and workstreams.
 - Owner admin page (`/admin`): mint/revoke invites, reset a user's password, and invite from the waitlist — all from the browser (the CLI scripts still work)
 - MCP server: connect Claude Code; tasks update from inside your coding sessions
 - Spec / requirements docs: attach a versioned markdown doc to a workstream or a task (dictate one to Claude, pull it back via MCP when an agent picks up the work)
+- Public ledger: opt a workstream into unauthenticated, read-only viewing at `/api/public/<slug>` (tasks + specs, user data stripped)
 - Four themes (Classic Mac OS, Notional, Minimal, Terminal)
 - Live dashboard updates (polls every 10s when the tab is visible)
 
