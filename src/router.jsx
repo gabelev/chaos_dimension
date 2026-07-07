@@ -17,6 +17,7 @@ import App from './pages/App';
 import Connect from './pages/Connect';
 import Admin from './pages/Admin';
 import OauthConsent from './pages/OauthConsent';
+import PublicLedger from './pages/PublicLedger';
 import { api } from './lib/api';
 
 const PUBLIC_DEMO = import.meta.env.VITE_PUBLIC_DEMO === 'true';
@@ -55,6 +56,10 @@ const router = createBrowserRouter([
   { path: '/connect', element: <Connect /> },
   { path: '/admin', element: <OwnerOnly><Admin /></OwnerOnly> },
   { path: '/oauth/consent', element: <OauthConsent /> },
+  // Public ledger vanity URLs (e.g. /mold). Dynamic segments rank below the
+  // static routes above, so this only catches otherwise-unmatched paths; a
+  // slug that isn't a public workstream renders the page's not-found state.
+  { path: '/:slug', element: <PublicLedger /> },
 ]);
 
 export function Router() {

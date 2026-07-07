@@ -153,7 +153,7 @@ A workstream can be marked **public** (Workstreams modal → Edit → "Public le
 GET /api/public/<slug-or-id>
 ```
 
-The response is `{ workstream, tasks, specs }`, read-only, rate-limited per IP, and stripped of user ids. Everything else stays private: the flag is enforced in Postgres by dedicated SELECT-only RLS policies that only activate inside the public handler's transaction, so authenticated sessions and MCP agents keep seeing exactly their own rows. Toggling the flag off makes the workstream 404 again (indistinguishable from nonexistent).
+There's also a human-facing view at `/<slug>` (e.g. `chaosdimension.fyi/mold`) — a read-only board with the kanban columns and expandable specs, refreshed every minute. The response is `{ workstream, tasks, specs }`, read-only, rate-limited per IP, and stripped of user ids. Everything else stays private: the flag is enforced in Postgres by dedicated SELECT-only RLS policies that only activate inside the public handler's transaction, so authenticated sessions and MCP agents keep seeing exactly their own rows. Toggling the flag off makes the workstream 404 again (indistinguishable from nonexistent).
 
 Existing deploys need the new column + policies: `npm run db:push` then `npm run db:migrate-multi-tenant`.
 
