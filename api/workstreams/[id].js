@@ -14,7 +14,7 @@ import { requireAuth } from '../../src/lib/requireAuth.js';
 import { withErrors, methodNotAllowed } from '../../src/lib/apiHandler.js';
 import { eq } from 'drizzle-orm';
 
-const ALLOWED_FIELDS = ['label', 'color', 'icon'];
+const ALLOWED_FIELDS = ['label', 'color', 'icon', 'isPublic'];
 
 export default withErrors(async function handle(req, res) {
   const session = await requireAuth(req, res);
@@ -30,6 +30,11 @@ export default withErrors(async function handle(req, res) {
     }
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({ error: 'no fields to update', message: 'No fields provided.' });
+    }
+    // isPublic flips the workstream onto the unauthenticated /api/public
+    // surface — accept only a real boolean, never something truthy.
+    if ('isPublic' in updates && typeof updates.isPublic !== 'boolean') {
+      return res.status(400).json({ error: 'invalid isPublic', message: 'isPublic must be true or false.' });
     }
     const row = await withUserContext(getDb(), session.userId, async (tx) => {
       const [updated] = await tx.update(workstreams).set(updates).where(eq(workstreams.id, id)).returning();

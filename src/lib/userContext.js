@@ -22,3 +22,16 @@ export async function withUserContext(db, userId, fn) {
     return fn(tx);
   });
 }
+
+// Public-ledger read context. Sets app.public_read LOCAL to the transaction;
+// the *_public_read RLS policies (scripts/migrate-multi-tenant.js) only grant
+// SELECT on rows of public workstreams when this var is 'true'. It is a
+// separate var — NOT a magic app.current_user_id value — so authenticated
+// requests, which never set it, keep seeing exactly their own rows and
+// nothing else. No user id is set, so writes fail every policy's WITH CHECK.
+export async function withPublicContext(db, fn) {
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`SELECT set_config('app.public_read', 'true', true)`);
+    return fn(tx);
+  });
+}

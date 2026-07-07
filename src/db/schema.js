@@ -17,6 +17,12 @@ export const workstreams = pgTable('workstreams', {
   icon: text('icon').notNull(),
   slug: text('slug'),
   userId: text('user_id'),
+  // Public ledger flag. When true, the workstream (and its tasks/specs) is
+  // readable WITHOUT authentication via GET /api/public/:workstream — the
+  // public-read RLS policies installed by scripts/migrate-multi-tenant.js
+  // key off this column. Named is_public (not "public") because PUBLIC is a
+  // reserved word in Postgres and would need quoting in hand-written policy SQL.
+  isPublic: boolean('is_public').notNull().default(false),
 });
 
 export const tasks = pgTable('tasks', {

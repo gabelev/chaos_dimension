@@ -82,7 +82,7 @@ export default function App({ mode = 'live' }) {
       api.listTasks().then(setTasks).catch((err) => console.error('tasks refresh failed', err));
       api.listAgents().then(setAgents).catch((err) => console.error('agents refresh failed', err));
       api.listWorkstreams()
-        .then((ws) => setWorkstreams(Object.fromEntries(ws.map(w => [w.id, { label: w.label, color: w.color, icon: w.icon }]))))
+        .then((ws) => setWorkstreams(Object.fromEntries(ws.map(w => [w.id, { label: w.label, color: w.color, icon: w.icon, slug: w.slug, isPublic: w.isPublic }]))))
         .catch((err) => console.error('workstreams refresh failed', err));
       api.listSpecs().then(setSpecs).catch((err) => console.error('specs refresh failed', err));
     };
@@ -125,7 +125,7 @@ export default function App({ mode = 'live' }) {
       return created;
     }
     const created = await api.createWorkstream(ws);
-    setWorkstreams(prev => ({ ...prev, [created.id]: { label: created.label, color: created.color, icon: created.icon } }));
+    setWorkstreams(prev => ({ ...prev, [created.id]: { label: created.label, color: created.color, icon: created.icon, slug: created.slug, isPublic: created.isPublic } }));
     return created;
   }, [isDemo, nextWorkstreamId]);
 
@@ -135,7 +135,7 @@ export default function App({ mode = 'live' }) {
       return { id, ...workstreams[id], ...updates };
     }
     const updated = await api.updateWorkstream(id, updates);
-    setWorkstreams(prev => ({ ...prev, [id]: { label: updated.label, color: updated.color, icon: updated.icon } }));
+    setWorkstreams(prev => ({ ...prev, [id]: { label: updated.label, color: updated.color, icon: updated.icon, slug: updated.slug, isPublic: updated.isPublic } }));
     return updated;
   }, [isDemo, workstreams]);
 

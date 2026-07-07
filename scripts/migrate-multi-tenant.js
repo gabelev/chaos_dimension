@@ -141,6 +141,14 @@ export async function runMigration() {
       `CREATE UNIQUE INDEX IF NOT EXISTS workstreams_user_slug_uniq ON workstreams (user_id, slug)`
     ));
 
+    // 3c. Public-ledger column: workstreams.is_public marks a workstream (and
+    //     its tasks/specs) as readable without authentication via
+    //     GET /api/public/:workstream. Guarded like the slug add in 3b so this
+    //     script works whether or not drizzle migration 0003 ran first.
+    await tx.execute(sql.raw(
+      `ALTER TABLE workstreams ADD COLUMN IF NOT EXISTS is_public boolean NOT NULL DEFAULT false`
+    ));
+
     // 4. Lock NOT NULL + CASCADE FK on user_id — RLS tables plus agent_tokens
     //    (its mint endpoint always has a session, so NOT NULL is safe even
     //    though it isn't RLS-scoped). oauth_clients keeps a nullable user_id
@@ -189,6 +197,59 @@ export async function runMigration() {
             CREATE POLICY ${table}_user_isolation ON ${table}
               USING (user_id = current_setting('app.current_user_id', true))
               WITH CHECK (user_id = current_setting('app.current_user_id', true));
+          END IF;
+        END $$;
+      `));
+    }
+
+    // 5a. Public-ledger read policies. RLS policies are permissive (OR-ed), so
+    //     these ADD read access without touching the user-isolation policies.
+    //     Every one of them requires the app.public_read session var — set only
+    //     by withPublicContext (src/lib/userContext.js), i.e. only by the
+    //     unauthenticated GET /api/public/:workstream handler. Authenticated
+    //     requests never set it, so their SELECTs keep returning exactly their
+    //     own rows (a bare `is_public = true` policy would leak other users'
+    //     public workstreams into every authenticated list endpoint).
+    //     SELECT-only: writes still have to satisfy a WITH CHECK, and no
+    //     public policy has one — the public surface is structurally read-only.
+    //     The EXISTS subqueries are themselves RLS-checked, which is what makes
+    //     them safe: under public_read, workstreams only yields is_public rows.
+    //     CREATE POLICY is not idempotent; guard like step 5.
+    const publicPolicies = [
+      ['workstreams', 'workstreams_public_read', `
+        current_setting('app.public_read', true) = 'true'
+        AND is_public
+      `],
+      ['tasks', 'tasks_public_read', `
+        current_setting('app.public_read', true) = 'true'
+        AND EXISTS (
+          SELECT 1 FROM workstreams w
+          WHERE w.id = tasks.workstream AND w.is_public
+        )
+      `],
+      ['specs', 'specs_public_read', `
+        current_setting('app.public_read', true) = 'true'
+        AND (
+          (specs.workstream_id IS NOT NULL AND EXISTS (
+            SELECT 1 FROM workstreams w
+            WHERE w.id = specs.workstream_id AND w.is_public
+          ))
+          OR
+          (specs.task_id IS NOT NULL AND EXISTS (
+            SELECT 1 FROM tasks t JOIN workstreams w ON w.id = t.workstream
+            WHERE t.id = specs.task_id AND w.is_public
+          ))
+        )
+      `],
+    ];
+    for (const [table, name, using] of publicPolicies) {
+      await tx.execute(sql.raw(`
+        DO $$ BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_policies WHERE tablename = '${table}' AND policyname = '${name}'
+          ) THEN
+            CREATE POLICY ${name} ON ${table} FOR SELECT
+              USING (${using});
           END IF;
         END $$;
       `));
