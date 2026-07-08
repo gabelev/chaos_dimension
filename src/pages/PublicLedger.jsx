@@ -20,9 +20,11 @@ import { COLUMNS, COL_LABELS } from '../data/workstreams';
 
 const PRIORITY_MARK = { high: '●', med: '◐', low: '○' };
 
-function ReadOnlyCard({ task, color, hasSpec, theme }) {
+function ReadOnlyCard({ task, color, taskSpecs, theme }) {
+  const [open, setOpen] = useState(false);
   return (
     <div
+      onClick={() => setOpen((v) => !v)}
       style={{
         background: theme.cardBg,
         border: theme.cardBorder,
@@ -30,6 +32,7 @@ function ReadOnlyCard({ task, color, hasSpec, theme }) {
         marginBottom: 4,
         borderLeft: `3px solid ${color}`,
         color: theme.text,
+        cursor: 'pointer',
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 4 }}>
@@ -40,13 +43,37 @@ function ReadOnlyCard({ task, color, hasSpec, theme }) {
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
         {task.agentDispatchable && <span title="Agent-dispatchable" style={{ fontSize: 11 }}>⚡</span>}
-        {hasSpec && <span title="Has a spec / requirements doc" style={{ fontSize: 10 }}>📄</span>}
-        {task.notes && (
+        {taskSpecs.length > 0 && <span title="Has a spec / requirements doc" style={{ fontSize: 10 }}>📄</span>}
+        {!open && task.notes && (
           <span style={{ fontSize: 10, color: theme.textDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {task.notes}
           </span>
         )}
+        <span style={{ marginLeft: 'auto', fontSize: 9, color: theme.textDim, flexShrink: 0 }}>{open ? '▾' : '▸'}</span>
       </div>
+      {open && (
+        <div style={{ marginTop: 5, borderTop: `1px solid ${theme.chromeDark}`, paddingTop: 5 }}>
+          {task.notes ? (
+            <pre style={{
+              margin: '0 0 5px', fontSize: 11, lineHeight: 1.5,
+              whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+              fontFamily: 'Courier New, monospace', color: theme.text,
+            }}>
+              {task.notes}
+            </pre>
+          ) : (
+            <div style={{ fontSize: 10, color: theme.textDim, marginBottom: 5 }}>No notes.</div>
+          )}
+          {taskSpecs.map((s) => (
+            <div key={s.id} style={{ fontSize: 10, color: theme.textDim }}>
+              📄 {s.title} (v{s.version} — see Specs below)
+            </div>
+          ))}
+          <div style={{ fontSize: 9, color: theme.textDim, marginTop: 4 }}>
+            created {new Date(task.createdAt).toLocaleDateString()} · updated {new Date(task.updatedAt).toLocaleDateString()}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -86,7 +113,7 @@ function SpecEntry({ spec, theme }) {
 
 function CenteredNote({ theme, title, children }) {
   return (
-    <div style={{ ...theme.desktop, padding: 24, overflow: 'auto', minHeight: '100vh' }}>
+    <div style={{ ...theme.desktop, padding: 24, height: '100vh', overflowY: 'auto' }}>
       <div style={{
         background: theme.windowBg, border: theme.windowBorder,
         boxShadow: theme.windowShadow || '4px 4px 0 rgba(0,0,0,0.3)',
@@ -148,10 +175,16 @@ export default function PublicLedger() {
   }
 
   const { workstream: ws, tasks, specs } = state.data;
-  const specTaskIds = new Set(specs.filter((s) => s.taskId).map((s) => s.taskId));
+  const specsByTask = specs.reduce((acc, s) => {
+    if (s.taskId) (acc[s.taskId] ||= []).push(s);
+    return acc;
+  }, {});
 
   return (
-    <div style={{ ...theme.desktop, padding: 16, overflow: 'auto', minHeight: '100vh', fontFamily: theme.FONT }}>
+    // The app's GLOBAL_CSS sets body{overflow:hidden} (desktop metaphor), so
+    // this wrapper must be the scroll container: fixed viewport height, own
+    // scrollbar. minHeight would grow past the hidden body and clip instead.
+    <div style={{ ...theme.desktop, padding: 16, height: '100vh', overflowY: 'auto', fontFamily: theme.FONT }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <MacWindow title={`${ws.icon} ${ws.label} — public ledger`} stacked minHeight={0}>
           <div style={{ padding: 10, background: theme.windowBg }}>
@@ -172,7 +205,7 @@ export default function PublicLedger() {
                       {COL_LABELS[col]} ({colTasks.length})
                     </div>
                     {colTasks.map((t) => (
-                      <ReadOnlyCard key={t.id} task={t} color={ws.color} hasSpec={specTaskIds.has(t.id) || specs.some((s) => s.workstreamId === ws.id)} theme={theme} />
+                      <ReadOnlyCard key={t.id} task={t} color={ws.color} taskSpecs={specsByTask[t.id] || []} theme={theme} />
                     ))}
                   </div>
                 );
