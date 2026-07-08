@@ -113,7 +113,7 @@ function SpecEntry({ spec, theme }) {
 
 function CenteredNote({ theme, title, children }) {
   return (
-    <div style={{ ...theme.desktop, padding: 24, overflow: 'auto', minHeight: '100vh' }}>
+    <div style={{ ...theme.desktop, padding: 24, height: '100vh', overflowY: 'auto' }}>
       <div style={{
         background: theme.windowBg, border: theme.windowBorder,
         boxShadow: theme.windowShadow || '4px 4px 0 rgba(0,0,0,0.3)',
@@ -181,7 +181,10 @@ export default function PublicLedger() {
   }, {});
 
   return (
-    <div style={{ ...theme.desktop, padding: 16, overflow: 'auto', minHeight: '100vh', fontFamily: theme.FONT }}>
+    // The app's GLOBAL_CSS sets body{overflow:hidden} (desktop metaphor), so
+    // this wrapper must be the scroll container: fixed viewport height, own
+    // scrollbar. minHeight would grow past the hidden body and clip instead.
+    <div style={{ ...theme.desktop, padding: 16, height: '100vh', overflowY: 'auto', fontFamily: theme.FONT }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <MacWindow title={`${ws.icon} ${ws.label} — public ledger`} stacked minHeight={0}>
           <div style={{ padding: 10, background: theme.windowBg }}>
