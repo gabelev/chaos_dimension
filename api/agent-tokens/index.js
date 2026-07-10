@@ -13,16 +13,27 @@ import { agents, agentTokens } from '../../src/db/schema.js';
 import { requireAuth } from '../../src/lib/requireAuth.js';
 import { withErrors, methodNotAllowed } from '../../src/lib/apiHandler.js';
 import { generateToken, hashToken } from '../../src/lib/agentToken.js';
-import { eq, desc } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 
 export async function mintTokenLogic({ db, body, userId }) {
   const label = typeof body?.label === 'string' ? body.label.trim() : '';
   if (!label) {
     return { status: 400, body: { error: 'label required', message: 'A label is required.' } };
   }
+  // Guard the tenancy invariant. The HTTP handler runs this inside
+  // withUserContext (RLS scopes every query), but a caller on a BYPASSRLS
+  // connection (the mint-api-key CLI, owner role) has no such backstop — a
+  // missing userId would silently insert an unscoped row.
+  if (!userId) {
+    return { status: 400, body: { error: 'userId required', message: 'A userId is required to mint a token.' } };
+  }
 
-  // Each label gets its own agent row. Reuse if one already exists.
-  const existingAgents = await db.select().from(agents).where(eq(agents.name, label)).limit(1);
+  // Each label gets its own agent row, scoped to this user. Reuse if one
+  // already exists. The userId filter is redundant under RLS but load-bearing
+  // when this runs on a BYPASSRLS connection, where a bare name match could
+  // otherwise reuse another user's agent row.
+  const existingAgents = await db.select().from(agents)
+    .where(and(eq(agents.name, label), eq(agents.userId, userId))).limit(1);
   let agentId;
   if (existingAgents.length) {
     agentId = existingAgents[0].id;

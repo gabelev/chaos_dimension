@@ -12,8 +12,9 @@ dotenv.config({ path: '.env.local' });
 dotenv.config({ path: '.env' });
 
 import readline from 'node:readline';
+import { sql } from 'drizzle-orm';
 import { mintTokenLogic } from '../api/agent-tokens/index.js';
-import { getDb } from '../src/db/client.js';
+import { getMigrationDb } from '../src/db/client.js';
 
 function prompt(q) {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
@@ -32,15 +33,23 @@ function parseArgs(argv) {
 }
 
 async function main() {
-  if (!process.env.DATABASE_URL) {
-    console.error('\nDATABASE_URL is not set in .env.local. Add it (copy from Vercel or Neon) and re-run.\n');
+  // Uses the migration (owner-role) connection — the same one
+  // db:migrate-multi-tenant uses — not the runtime cd_app role. The cd_app
+  // role is RLS-scoped and needs a per-request session var (app.current_user_id)
+  // that a local script has no way to set, so its inserts into the RLS-forced
+  // agents table would be rejected. The owner role bypasses RLS; we resolve the
+  // owner's user id explicitly and stamp the token to it.
+  const ownerEmail = process.env.CHAOS_OWNER_EMAIL;
+  if (!ownerEmail) {
+    console.error('\nCHAOS_OWNER_EMAIL is not set in .env.local. Set it to the owner account email and re-run.\n');
     process.exit(1);
   }
 
   const args = parseArgs(process.argv.slice(2));
 
   console.log('\nMint a new MCP API token for Chaos Dimension.');
-  console.log('(Local script — no password required. Possession of DATABASE_URL is the credential.)\n');
+  console.log(`(Local script — no password required. Possession of the DB connection is the credential.)`);
+  console.log(`Minting on the board of ${ownerEmail}.\n`);
 
   const label = args.label || (await prompt('Token label (e.g. "macbook"): ')).trim();
   if (!label) {
@@ -48,8 +57,15 @@ async function main() {
     process.exit(1);
   }
 
-  const db = getDb();
-  const result = await mintTokenLogic({ db, body: { label } });
+  const db = getMigrationDb();
+  const ownerRows = await db.execute(sql`SELECT id FROM users WHERE email = ${ownerEmail} LIMIT 1`);
+  const userId = (ownerRows.rows ?? ownerRows)[0]?.id;
+  if (!userId) {
+    console.error(`\nNo user found for CHAOS_OWNER_EMAIL=${ownerEmail}. Run db:migrate-multi-tenant first.\n`);
+    process.exit(1);
+  }
+
+  const result = await mintTokenLogic({ db, body: { label }, userId });
   if (result.status !== 201) {
     console.error('\nMint failed:', result.body, '\n');
     process.exit(1);
