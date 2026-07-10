@@ -329,7 +329,10 @@ export default function Connect() {
   }, []);
 
   return (
-    <div style={{ ...theme.desktop, padding: 24, overflow: 'auto', minHeight: '100vh' }}>
+    // theme.desktop carries minHeight:100vh and GLOBAL_CSS sets
+    // body{overflow:hidden}, so a min-height wrapper just grows past the
+    // viewport and gets clipped. Pin to a fixed 100vh and own the scroll.
+    <div style={{ ...theme.desktop, minHeight: 0, height: '100vh', overflowY: 'auto', padding: 24 }}>
       <div style={{
         background: theme.chrome,
         border: theme.windowBorder,

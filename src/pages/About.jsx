@@ -14,7 +14,7 @@ import Attribution from '../components/Attribution';
 export default function About() {
   const { theme } = useTheme();
   return (
-    <div style={{ ...theme.desktop, padding: 24, overflow: 'auto' }}>
+    <div style={{ ...theme.desktop, minHeight: 0, height: '100vh', overflowY: 'auto', padding: 24 }}>
       <div
         style={{
           background: theme.chrome,
