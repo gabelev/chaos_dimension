@@ -87,7 +87,11 @@ Lets Claude Code (or any MCP client) read and write your tasks, claim work, and 
    ```bash
    npm run mint-api-key -- --label macbook
    ```
-   The script prints a `cd_...` token. Copy it. (Token is shown once.)
+   The script prints a `cd_...` token. Copy it. (Token is shown once.) It mints
+   on the owner's board, so `.env.local` needs `CHAOS_OWNER_EMAIL` and the
+   owner-role DB URL (`DATABASE_URL_MIGRATIONS`, the same one `db:migrate-multi-tenant`
+   uses). Signed-in hosted users can skip the CLI and mint from the **Connect AI**
+   menu instead.
 
 2. **Register the MCP server with Claude Code**:
    ```bash
