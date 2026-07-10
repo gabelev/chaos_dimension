@@ -9,8 +9,11 @@
 // GNU Affero General Public License for more details.
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useTheme } from '../themes';
+import { useTheme, THEME_LIST } from '../themes';
 import MacWindow from '../components/MacWindow';
+import { MenuBar, MenuBarItem, MenuDropdown } from '../components/MenuBar';
+import AboutDialog from '../components/AboutDialog';
+import ModalShell from '../components/ModalShell';
 import { COLUMNS, COL_LABELS } from '../data/workstreams';
 
 // Read-only public view of a workstream flagged is_public — the human-facing
@@ -111,6 +114,30 @@ function SpecEntry({ spec, theme }) {
   );
 }
 
+function LedgerHelpDialog({ theme, label, onClose }) {
+  return (
+    <ModalShell title="About this ledger" onClose={onClose} width={380} zIndex={400}>
+      <div style={{ padding: 20, background: theme.windowBg, color: theme.text, fontSize: 12, lineHeight: 1.6 }}>
+        <p style={{ margin: '0 0 10px' }}>
+          A live, read-only view of the <strong>{label}</strong> workstream on Chaos Dimension — a public ledger of work in progress.
+        </p>
+        <ul style={{ margin: '0 0 10px', paddingLeft: 18 }}>
+          <li>Refreshes on its own about once a minute.</li>
+          <li>Click any task card to expand its notes.</li>
+          <li>Open a spec in the Specs window to read the full document.</li>
+          <li>Nothing here is editable — it mirrors the team's board.</li>
+        </ul>
+        <p style={{ margin: 0, color: theme.textDim }}>
+          Priority: ● high · ◐ medium · ○ low. &nbsp;⚡ agent-dispatchable · 📄 has a spec.
+        </p>
+        <div style={{ textAlign: 'right', marginTop: 16 }}>
+          <button type="button" className="mac-btn mac-btn-primary" onClick={onClose} style={{ minWidth: 80 }}>OK</button>
+        </div>
+      </div>
+    </ModalShell>
+  );
+}
+
 function CenteredNote({ theme, title, children }) {
   return (
     <div style={{ ...theme.desktop, padding: 24, height: '100vh', overflowY: 'auto' }}>
@@ -129,8 +156,17 @@ function CenteredNote({ theme, title, children }) {
 
 export default function PublicLedger() {
   const { slug } = useParams();
-  const { theme } = useTheme();
+  const { theme, themeId, setThemeId } = useTheme();
   const [state, setState] = useState({ status: 'loading' });
+  const [activeMenu, setActiveMenu] = useState(null);
+  const [showAbout, setShowAbout] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [clock, setClock] = useState(() => new Date());
+
+  useEffect(() => {
+    const t = setInterval(() => setClock(new Date()), 60000);
+    return () => clearInterval(t);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -179,12 +215,50 @@ export default function PublicLedger() {
     if (s.taskId) (acc[s.taskId] ||= []).push(s);
     return acc;
   }, {});
+  const activeCount = tasks.filter((t) => t.column === 'active').length;
+  const doneCount = tasks.filter((t) => t.column === 'done').length;
+  const ghUrl = 'https://github.com/gabelev/chaos_dimension';
 
   return (
-    // The app's GLOBAL_CSS sets body{overflow:hidden} (desktop metaphor), so
-    // this wrapper must be the scroll container: fixed viewport height, own
-    // scrollbar. minHeight would grow past the hidden body and clip instead.
-    <div style={{ ...theme.desktop, padding: 16, height: '100vh', overflowY: 'auto', fontFamily: theme.FONT }}>
+    // Fixed-height flex column: the menu bar stays pinned (flexShrink:0) while
+    // the board region below owns the scroll. The app's GLOBAL_CSS sets
+    // body{overflow:hidden}, so the page itself must never grow past 100vh.
+    // Clicking anywhere closes an open menu (items stopPropagation).
+    <div
+      style={{ ...theme.desktop, minHeight: 0, height: '100vh', display: 'flex', flexDirection: 'column', fontFamily: theme.FONT }}
+      onClick={() => setActiveMenu(null)}
+    >
+      <MenuBar clock={clock}>
+        <MenuBarItem label="🍎" active={activeMenu === 'apple'} onClick={(e) => { e.stopPropagation(); setActiveMenu(activeMenu === 'apple' ? null : 'apple'); }}>
+          {activeMenu === 'apple' && (
+            <MenuDropdown items={[
+              { label: 'About Chaos Dimension…', action: () => { setShowAbout(true); setActiveMenu(null); } },
+              // AGPL §13 source-disclosure — reachable from the public page too.
+              { label: 'View source on GitHub', action: () => { window.open(ghUrl, '_blank', 'noopener'); setActiveMenu(null); } },
+              { divider: true },
+              { label: `Tasks: ${tasks.length}   Active: ${activeCount}   Done: ${doneCount}`, disabled: true },
+            ]} />
+          )}
+        </MenuBarItem>
+        <MenuBarItem label="Theme" active={activeMenu === 'theme'} onClick={(e) => { e.stopPropagation(); setActiveMenu(activeMenu === 'theme' ? null : 'theme'); }}>
+          {activeMenu === 'theme' && (
+            <MenuDropdown items={THEME_LIST.map((t) => ({
+              label: t.label, checked: themeId === t.id,
+              action: () => { setThemeId(t.id); setActiveMenu(null); },
+            }))} />
+          )}
+        </MenuBarItem>
+        <MenuBarItem label="Help" active={activeMenu === 'help'} onClick={(e) => { e.stopPropagation(); setActiveMenu(activeMenu === 'help' ? null : 'help'); }}>
+          {activeMenu === 'help' && (
+            <MenuDropdown items={[
+              { label: 'What is this page?', action: () => { setShowHelp(true); setActiveMenu(null); } },
+              { label: 'View source on GitHub', action: () => { window.open(ghUrl, '_blank', 'noopener'); setActiveMenu(null); } },
+            ]} />
+          )}
+        </MenuBarItem>
+      </MenuBar>
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
         <MacWindow title={`${ws.icon} ${ws.label} — public ledger`} stacked minHeight={0}>
           <div style={{ padding: 10, background: theme.windowBg }}>
@@ -224,11 +298,15 @@ export default function PublicLedger() {
 
         <div style={{ textAlign: 'center', fontSize: 10, color: theme.textDim, padding: '8px 0 16px' }}>
           Read-only public ledger · powered by{' '}
-          <a href="https://github.com/gabelev/chaos_dimension" target="_blank" rel="noreferrer" style={theme.link}>
+          <a href={ghUrl} target="_blank" rel="noreferrer" style={theme.link}>
             Chaos Dimension
           </a>
         </div>
       </div>
+      </div>
+
+      {showAbout && <AboutDialog onClose={() => setShowAbout(false)} />}
+      {showHelp && <LedgerHelpDialog theme={theme} label={ws.label} onClose={() => setShowHelp(false)} />}
     </div>
   );
 }
