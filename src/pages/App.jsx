@@ -17,6 +17,7 @@ import TaskModal from '../components/TaskModal';
 import AgentCard from '../components/AgentCard';
 import AboutDialog from '../components/AboutDialog';
 import WorkstreamModal from '../components/WorkstreamModal';
+import NewPublicBoardModal from '../components/NewPublicBoardModal';
 import SpecModal from '../components/SpecModal';
 import OnboardingCoach from '../components/OnboardingCoach';
 import { api } from '../lib/api';
@@ -42,6 +43,7 @@ export default function App({ mode = 'live' }) {
   const [activeMenu, setActiveMenu] = useState(null);
   const [showAbout, setShowAbout] = useState(false);
   const [showWorkstreams, setShowWorkstreams] = useState(false);
+  const [showNewPublicBoard, setShowNewPublicBoard] = useState(false);
   const [coachOpen, setCoachOpen] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
   const closeCoach = useCallback(() => setCoachOpen(false), []);
@@ -396,6 +398,11 @@ export default function App({ mode = 'live' }) {
             <MenuDropdown items={[
               { label: "New Task", shortcut: "⌘N", action: () => { setShowAddTask(true); setActiveMenu(null); } },
               { label: "Manage Workstreams...", action: () => { setShowWorkstreams(true); setActiveMenu(null); } },
+              // Public boards are backed by the live API (create + public URL),
+              // so this only makes sense in live mode, not the localStorage demo.
+              ...(isDemo ? [] : [
+                { label: "New Public Board...", action: () => { setShowNewPublicBoard(true); setActiveMenu(null); } },
+              ]),
               // "Reset All Data..." only makes sense in the demo (it clears
               // localStorage). In live mode it never touched the DB and just
               // flashed the demo seed onto the user's board until the next
@@ -666,6 +673,12 @@ export default function App({ mode = 'live' }) {
         />
       )}
       {showAbout && <AboutDialog onClose={() => setShowAbout(false)} />}
+      {showNewPublicBoard && (
+        <NewPublicBoardModal
+          onCreate={(name) => createWorkstream({ label: name, isPublic: true })}
+          onClose={() => setShowNewPublicBoard(false)}
+        />
+      )}
       {mode === 'live' && <OnboardingCoach open={coachOpen} onClose={closeCoach} />}
       {showWorkstreams && (
         <WorkstreamModal

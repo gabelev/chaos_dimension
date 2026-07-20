@@ -15,6 +15,12 @@ import { withErrors, methodNotAllowed } from '../../src/lib/apiHandler.js';
 import { eq } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 
+// Defaults for the quick "new public board" path, which supplies only a name.
+// Kept identical to the New Workstream form's defaults so a quick-created board
+// is indistinguishable from a hand-made one (and freely editable afterward).
+const DEFAULT_COLOR = '#CC0066';
+const DEFAULT_ICON = '•';
+
 function slugify(s) {
   return String(s)
     .toLowerCase()
@@ -51,12 +57,18 @@ export default withErrors(async function handle(req, res) {
   if (req.method === 'POST') {
     const body = req.body ?? {};
     const label = typeof body.label === 'string' ? body.label.trim() : '';
-    const color = typeof body.color === 'string' ? body.color.trim() : '';
-    const icon = typeof body.icon === 'string' ? body.icon.trim() : '';
+    // color/icon are optional — the quick "new public board" path sends only a
+    // name and falls back to the shared defaults.
+    const color = (typeof body.color === 'string' && body.color.trim()) || DEFAULT_COLOR;
+    const icon = (typeof body.icon === 'string' && body.icon.trim()) || DEFAULT_ICON;
 
     if (!label) return res.status(400).json({ error: 'label required', message: 'Workstream name is required.' });
-    if (!color) return res.status(400).json({ error: 'color required', message: 'Color is required.' });
-    if (!icon) return res.status(400).json({ error: 'icon required', message: 'Icon is required.' });
+    // isPublic opts the new board onto the unauthenticated /api/public surface —
+    // accept only a real boolean, never something merely truthy.
+    if ('isPublic' in body && typeof body.isPublic !== 'boolean') {
+      return res.status(400).json({ error: 'invalid isPublic', message: 'isPublic must be true or false.' });
+    }
+    const isPublic = body.isPublic === true;
 
     const baseSlug = slugify(label);
     if (!baseSlug) {
@@ -75,6 +87,7 @@ export default withErrors(async function handle(req, res) {
         color,
         icon,
         slug,
+        isPublic,
         userId: session.userId,
       }).returning();
       return { row };
